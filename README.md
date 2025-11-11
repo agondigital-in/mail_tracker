@@ -1,36 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Email Tracking & Analytics System
 
-## Getting Started
+A full-featured email tracking and analytics system built with Next.js, similar to SendGrid/Mailgun tracking capabilities.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- 📧 Email sending with SMTP integration
+- 📊 Open tracking via 1×1 pixel (with Gmail proxy detection)
+- 🔗 Click tracking via redirect URLs
+- 📉 Bounce handling via webhooks
+- 📈 Campaign management and analytics
+- 📊 Interactive charts with shadcn/ui
+- 🔐 Secure authentication with Better Auth
+- 💾 MongoDB database with Mongoose
+- 🎨 Beautiful UI with shadcn components
+
+## Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Better Auth Configuration
+BETTER_AUTH_SECRET=your-secret-key
+BETTER_AUTH_URL=http://localhost:3000
+CORS_ORIGIN=http://localhost:3000
+
+# Database Configuration
+DATABASE_URL=mongodb://localhost:27017/mail
+DATABASE_NAME=mail
+
+# SMTP Configuration (Required for sending emails)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=YourApp <your-email@gmail.com>
+
+# Webhook Configuration (Optional - for bounce handling)
+WEBHOOK_SECRET=your-webhook-secret-key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### SMTP Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+For Gmail:
+1. Enable 2-factor authentication on your Google account
+2. Generate an App Password: https://myaccount.google.com/apppasswords
+3. Use the app password as `SMTP_PASSWORD`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+For other providers:
+- **SendGrid**: Use `smtp.sendgrid.net` with API key
+- **Mailgun**: Use `smtp.mailgun.org` with credentials
+- **Amazon SES**: Use your region's SMTP endpoint
 
-## Learn More
+## Installation
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Install dependencies
+npm install
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Start MongoDB (if running locally)
+mongod
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Run development server
+npm run dev
+```
 
-## Deploy on Vercel
+## API Endpoints
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Email Management
+- `POST /api/emails/send` - Send tracked email
+- `GET /api/emails/list` - List user's emails
+- `GET /api/emails/[id]` - Get email details with events
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Tracking (Public)
+- `GET /api/track/open?id={trackingId}` - Track email opens
+- `GET /api/track/click?id={trackingId}&url={destination}` - Track link clicks
+
+### Campaigns
+- `POST /api/campaigns/create` - Create campaign
+- `GET /api/campaigns/list` - List user's campaigns
+- `GET /api/campaigns/[id]` - Get campaign details with stats
+
+### Analytics
+- `GET /api/analytics/dashboard` - Get dashboard statistics
+
+### Webhooks
+- `POST /api/webhooks/bounce` - Handle bounce notifications
+
+## Database Models
+
+- **Email** - Email records with tracking data
+- **OpenEvent** - Email open events
+- **ClickEvent** - Link click events
+- **BounceEvent** - Email bounce events
+- **Campaign** - Campaign organization
+- **User** - User accounts (Better Auth)
+
+## Development
+
+```bash
+# Run linter
+npm run lint
+
+# Format code
+npm run format
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+```
+
+## Architecture
+
+- **Frontend**: Next.js 16 with React 19
+- **Backend**: Next.js API routes
+- **Database**: MongoDB with Mongoose
+- **Authentication**: Better Auth
+- **Email**: Nodemailer with SMTP
+- **UI**: shadcn components with Tailwind CSS
+
+## License
+
+MIT
