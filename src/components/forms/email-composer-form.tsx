@@ -6,7 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { CreateCampaignDialog } from "@/components/campaigns/create-campaign-dialog";
 import { toast } from "sonner";
+import { Plus } from "lucide-react";
 
 interface Campaign {
   _id: string;
@@ -112,34 +121,69 @@ export function EmailComposerForm() {
 
           <Field>
             <FieldLabel htmlFor="campaign">Campaign (Optional)</FieldLabel>
-            <select
-              id="campaign"
-              value={campaignId}
-              onChange={(e) => setCampaignId(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <option value="">No campaign</option>
-              {campaigns.map((campaign) => (
-                <option key={campaign._id} value={campaign._id}>
-                  {campaign.name}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <Select value={campaignId} onValueChange={setCampaignId}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="No campaign selected" />
+                </SelectTrigger>
+                <SelectContent>
+                  {campaigns.map((campaign) => (
+                    <SelectItem key={campaign._id} value={campaign._id}>
+                      {campaign.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <CreateCampaignDialog
+                onSuccess={(campaignId) => {
+                  fetch("/api/campaigns/list")
+                    .then((res) => res.json())
+                    .then((data) => {
+                      if (data.success) {
+                        setCampaigns(data.campaigns);
+                        setCampaignId(campaignId);
+                      }
+                    });
+                }}
+                trigger={
+                  <Button type="button" variant="outline" size="icon">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                }
+              />
+            </div>
           </Field>
 
           <Field>
             <FieldLabel htmlFor="html">
               Email Content (HTML) <span className="text-red-500">*</span>
             </FieldLabel>
-            <textarea
-              id="html"
-              value={html}
-              onChange={(e) => setHtml(e.target.value)}
-              placeholder="Your email HTML content here..."
-              required
-              rows={10}
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 font-mono"
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="flex flex-col">
+                <textarea
+                  id="html"
+                  value={html}
+                  onChange={(e) => setHtml(e.target.value)}
+                  placeholder="Your email HTML content here..."
+                  required
+                  className="flex-1 min-h-[300px] max-h-[400px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 font-mono resize-y"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  HTML Editor
+                </p>
+              </div>
+              <div className="flex flex-col">
+                <iframe
+                  srcDoc={html}
+                  className="flex-1 min-h-[300px] max-h-[400px] w-full rounded-md border border-input bg-white"
+                  title="Email Preview"
+                  sandbox="allow-same-origin"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Live Preview
+                </p>
+              </div>
+            </div>
           </Field>
 
           <Button type="submit" disabled={loading} className="w-full">

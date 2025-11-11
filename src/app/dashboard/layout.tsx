@@ -45,6 +45,12 @@ export default async function DashboardLayout({
                   Compose
                 </a>
                 <a
+                  href="/dashboard/bulk-compose"
+                  className="px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  Bulk Compose
+                </a>
+                <a
                   href="/dashboard/campaigns"
                   className="px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
                 >
