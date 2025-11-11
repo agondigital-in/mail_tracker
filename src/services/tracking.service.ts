@@ -14,6 +14,28 @@ export function isGmailProxy(userAgent: string): boolean {
 }
 
 /**
+ * Detect if open is from a bot/automated service
+ */
+export function isBotOrAutomated(userAgent: string): boolean {
+  const botPatterns = [
+    "GoogleImageProxy",
+    "node",
+    "bot",
+    "crawler",
+    "spider",
+    "preview",
+    "scanner",
+    "Yahoo! Slurp",
+    "Baiduspider",
+  ];
+
+  const userAgentLower = userAgent.toLowerCase();
+  return botPatterns.some((pattern) =>
+    userAgentLower.includes(pattern.toLowerCase()),
+  );
+}
+
+/**
  * Log open event and update email record
  */
 export async function logOpenEvent(
@@ -35,8 +57,9 @@ export async function logOpenEvent(
     });
     const isUnique = existingOpens === 0;
 
-    // Detect Gmail proxy
+    // Detect Gmail proxy and bots
     const gmailProxy = isGmailProxy(metadata.userAgent);
+    const isBot = isBotOrAutomated(metadata.userAgent);
 
     // Create open event
     await OpenEvent.create({
@@ -48,6 +71,13 @@ export async function logOpenEvent(
       isUnique,
       timestamp: metadata.timestamp,
     });
+
+    // Log bot detection for debugging
+    if (isBot) {
+      console.log(
+        `Bot/Automated open detected - User Agent: ${metadata.userAgent}`,
+      );
+    }
 
     // Update email record
     const updateData: Record<string, unknown> = {
