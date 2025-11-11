@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FolderKanban } from "lucide-react";
-import { CampaignForm } from "@/components/campaigns/campaign-form";
+import { CreateCampaignDialog } from "@/components/campaigns/create-campaign-dialog";
 import { CampaignList } from "@/components/campaigns/campaign-list";
 
 export default function CampaignsPage() {
@@ -45,26 +45,22 @@ export default function CampaignsPage() {
 
 	return (
 		<div className="container mx-auto py-8 px-4 max-w-7xl">
-			<div className="mb-8">
-				<div className="flex items-center gap-3 mb-2">
-					<div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
-						<FolderKanban className="w-6 h-6 text-white" />
+			<div className="mb-8 flex items-center justify-between">
+				<div>
+					<div className="flex items-center gap-3 mb-2">
+						<div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+							<FolderKanban className="w-6 h-6 text-white" />
+						</div>
+						<h1 className="text-4xl font-bold tracking-tight">Campaigns</h1>
 					</div>
-					<h1 className="text-4xl font-bold tracking-tight">Campaigns</h1>
+					<p className="text-muted-foreground text-lg ml-15">
+						Organize and track your email campaigns
+					</p>
 				</div>
-				<p className="text-muted-foreground text-lg ml-15">
-					Organize and track your email campaigns
-				</p>
+				<CreateCampaignDialog onSuccess={handleSuccess} />
 			</div>
 
-			<div className="grid gap-6 lg:grid-cols-3">
-				<div className="lg:col-span-1">
-					<CampaignForm onSuccess={handleSuccess} />
-				</div>
-				<div className="lg:col-span-2">
-					<CampaignList campaigns={campaigns} />
-				</div>
-			</div>
+			<CampaignList campaigns={campaigns} />
 		</div>
 	);
 }
