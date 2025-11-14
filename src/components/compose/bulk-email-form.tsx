@@ -120,8 +120,8 @@ export function BulkEmailForm() {
 						headers: { "Content-Type": "application/json" },
 						body: JSON.stringify({
 							to: recipient.email,
-							subject: subject.replace("{{name}}", recipient.name),
-							html: body.replace(/{{name}}/g, recipient.name),
+							subject: subject.replace(/\{\{name\}\}/gi, recipient.name),
+							html: body.replace(/\{\{name\}\}/gi, recipient.name),
 							campaignId: selectedCampaign,
 						}),
 					});
@@ -256,9 +256,17 @@ export function BulkEmailForm() {
 							placeholder="Hello {{name}}, check this out!"
 							required
 						/>
+						{subject && (
+							<div className="mt-2 p-2 rounded-md bg-muted/50 border border-border">
+								<p className="text-xs text-muted-foreground mb-1">Preview:</p>
+								<p className="text-sm font-medium">
+									{subject.replace(/\{\{name\}\}/gi, "John Doe")}
+								</p>
+							</div>
+						)}
 						<p className="text-xs text-muted-foreground mt-1">
 							Use <code className="bg-muted px-1 rounded">{"{{name}}"}</code> for
-							personalization
+							personalization (case-insensitive)
 						</p>
 					</Field>
 
@@ -285,7 +293,7 @@ export function BulkEmailForm() {
 							</div>
 							<div className="flex flex-col">
 								<iframe
-									srcDoc={body.replace(/{{name}}/g, "John Doe")}
+									srcDoc={body.replace(/\{\{name\}\}/gi, "John Doe")}
 									className="flex-1 min-h-[300px] max-h-[400px] w-full rounded-md border border-input bg-white"
 									title="Email Preview"
 									sandbox="allow-same-origin"
@@ -293,7 +301,7 @@ export function BulkEmailForm() {
 								<p className="text-xs text-muted-foreground mt-2">
 									Live Preview (
 									<code className="bg-muted px-1 rounded">{"{{name}}"}</code>{" "}
-									shown as John Doe)
+									shown as John Doe, case-insensitive)
 								</p>
 							</div>
 						</div>
