@@ -62,6 +62,12 @@ export default async function DashboardLayout({
                 >
                   Emails
                 </a>
+                <a
+                  href="/dashboard/smtp-servers"
+                  className="px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  SMTP
+                </a>
               </div>
             </div>
             <div className="flex items-center space-x-4">

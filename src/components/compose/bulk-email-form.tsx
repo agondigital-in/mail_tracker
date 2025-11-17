@@ -28,11 +28,14 @@ export function BulkEmailForm() {
 	const [recipients, setRecipients] = useState<Recipient[]>([]);
 	const [campaigns, setCampaigns] = useState<any[]>([]);
 	const [selectedCampaign, setSelectedCampaign] = useState("");
+	const [smtpServers, setSmtpServers] = useState<any[]>([]);
+	const [selectedSmtp, setSelectedSmtp] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [fileName, setFileName] = useState("");
 
 	useEffect(() => {
 		fetchCampaigns();
+		fetchSmtpServers();
 	}, []);
 
 	const fetchCampaigns = async () => {
@@ -44,6 +47,23 @@ export function BulkEmailForm() {
 			}
 		} catch (err) {
 			console.error("Error fetching campaigns:", err);
+		}
+	};
+
+	const fetchSmtpServers = async () => {
+		try {
+			const response = await fetch("/api/smtp-servers/list");
+			const data = await response.json();
+			if (data.success) {
+				setSmtpServers(data.smtpServers);
+				// Auto-select default SMTP
+				const defaultSmtp = data.smtpServers.find((s: any) => s.isDefault);
+				if (defaultSmtp) {
+					setSelectedSmtp(defaultSmtp._id);
+				}
+			}
+		} catch (err) {
+			console.error("Error fetching SMTP servers:", err);
 		}
 	};
 
@@ -107,6 +127,13 @@ export function BulkEmailForm() {
 			return;
 		}
 
+		if (smtpServers.length === 0) {
+			toast.error("No SMTP server configured", {
+				description: "Please add an SMTP server in settings before sending emails",
+			});
+			return;
+		}
+
 		setLoading(true);
 
 		try {
@@ -123,6 +150,7 @@ export function BulkEmailForm() {
 							subject: subject.replace(/\{\{name\}\}/gi, recipient.name),
 							html: body.replace(/\{\{name\}\}/gi, recipient.name),
 							campaignId: selectedCampaign,
+							smtpServerId: selectedSmtp || undefined,
 						}),
 					});
 
@@ -241,6 +269,30 @@ export function BulkEmailForm() {
 								}
 							/>
 						</div>
+					</Field>
+
+					{/* SMTP Selection */}
+					<Field>
+						<FieldLabel htmlFor="smtp">
+							SMTP Server <span className="text-red-500">*</span>
+						</FieldLabel>
+						<Select value={selectedSmtp} onValueChange={setSelectedSmtp}>
+							<SelectTrigger>
+								<SelectValue placeholder="Select SMTP server" />
+							</SelectTrigger>
+							<SelectContent>
+								{smtpServers.map((server: any) => (
+									<SelectItem key={server._id} value={server._id}>
+										{server.name} {server.isDefault && "(Default)"}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						{smtpServers.length === 0 && (
+							<p className="text-xs text-red-500 mt-1">
+								No SMTP server configured. Please add one to send emails.
+							</p>
+						)}
 					</Field>
 
 					{/* Subject */}

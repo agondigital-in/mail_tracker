@@ -22,16 +22,24 @@ interface Campaign {
   name: string;
 }
 
+interface SmtpServer {
+  _id: string;
+  name: string;
+}
+
 export function EmailComposerForm() {
   const router = useRouter();
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [campaignId, setCampaignId] = useState("");
+  const [smtpServerId, setSmtpServerId] = useState("");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [smtpServers, setSmtpServers] = useState<SmtpServer[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Fetch campaigns
     fetch("/api/campaigns/list")
       .then((res) => res.json())
       .then((data) => {
@@ -40,10 +48,38 @@ export function EmailComposerForm() {
         }
       })
       .catch((err) => console.error("Error fetching campaigns:", err));
+
+    // Fetch SMTP servers
+    fetch("/api/smtp-servers/list")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setSmtpServers(data.smtpServers);
+          // Auto-select default SMTP
+          const defaultSmtp = data.smtpServers.find((s: any) => s.isDefault);
+          if (defaultSmtp) {
+            setSmtpServerId(defaultSmtp._id);
+          }
+        }
+      })
+      .catch((err) => console.error("Error fetching SMTP servers:", err));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if user has SMTP configured
+    if (smtpServers.length === 0) {
+      toast.error("No SMTP server configured", {
+        description: "Please add an SMTP server in settings before sending emails",
+        action: {
+          label: "Add SMTP",
+          onClick: () => router.push("/dashboard/smtp-servers"),
+        },
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -55,6 +91,7 @@ export function EmailComposerForm() {
           subject,
           html,
           campaignId: campaignId || undefined,
+          smtpServerId: smtpServerId || undefined,
         }),
       });
 
@@ -152,6 +189,40 @@ export function EmailComposerForm() {
                 }
               />
             </div>
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="smtp">
+              SMTP Server <span className="text-red-500">*</span>
+            </FieldLabel>
+            <div className="flex gap-2">
+              <Select value={smtpServerId} onValueChange={setSmtpServerId}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Select SMTP server" />
+                </SelectTrigger>
+                <SelectContent>
+                  {smtpServers.map((server: any) => (
+                    <SelectItem key={server._id} value={server._id}>
+                      {server.name} {server.isDefault && "(Default)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => router.push("/dashboard/smtp-servers")}
+                title="Manage SMTP Servers"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            {smtpServers.length === 0 && (
+              <p className="text-xs text-red-500 mt-1">
+                No SMTP server configured. Please add one to send emails.
+              </p>
+            )}
           </Field>
 
           <Field>

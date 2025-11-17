@@ -1,17 +1,6 @@
-import nodemailer from "nodemailer";
 import { randomBytes } from "crypto";
 import { Email } from "@/db/models";
-
-// Create SMTP transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
+import { getUserTransporter } from "@/lib/smtp";
 
 interface SendEmailData {
   userId: string;
@@ -19,6 +8,7 @@ interface SendEmailData {
   subject: string;
   html: string;
   campaignId?: string;
+  smtpServerId?: string;
 }
 
 /**
@@ -66,7 +56,10 @@ export function processHtmlContent(html: string, trackingId: string): string {
  * Send email with tracking
  */
 export async function sendEmail(data: SendEmailData) {
-  const { userId, to, subject, html, campaignId } = data;
+  const { userId, to, subject, html, campaignId, smtpServerId } = data;
+
+  // Get user's transporter and from email
+  const { transporter, fromEmail } = await getUserTransporter(userId, smtpServerId);
 
   // Generate tracking ID
   const trackingId = generateTrackingId();
@@ -75,10 +68,8 @@ export async function sendEmail(data: SendEmailData) {
   const processedHtml = processHtmlContent(html, trackingId);
 
   // Send email via SMTP
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER;
-
   await transporter.sendMail({
-    from,
+    from: fromEmail,
     to,
     subject,
     html: processedHtml,
