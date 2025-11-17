@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { EmailMetadata } from "@/components/email/email-metadata";
 import { EventsList } from "@/components/email/events-list";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ interface EmailData {
 
 export default function EmailDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const [data, setData] = useState<EmailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

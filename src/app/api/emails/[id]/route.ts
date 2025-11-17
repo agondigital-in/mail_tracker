@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { BounceEvent, ClickEvent, OpenEvent } from "@/db/models";
 import { auth } from "@/lib/auth";
 import { getEmailById } from "@/services/email.service";
-import { OpenEvent, ClickEvent, BounceEvent } from "@/db/models";
 
 export async function GET(
   request: NextRequest,

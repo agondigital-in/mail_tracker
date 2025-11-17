@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { logClickEvent } from "@/services/tracking.service";
 
 export async function GET(request: NextRequest) {

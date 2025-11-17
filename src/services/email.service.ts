@@ -1,4 +1,4 @@
-import { randomBytes } from "crypto";
+import { randomBytes } from "node:crypto";
 import { Email } from "@/db/models";
 import { getUserTransporter } from "@/lib/smtp";
 
@@ -59,7 +59,10 @@ export async function sendEmail(data: SendEmailData) {
   const { userId, to, subject, html, campaignId, smtpServerId } = data;
 
   // Get user's transporter and from email
-  const { transporter, fromEmail } = await getUserTransporter(userId, smtpServerId);
+  const { transporter, fromEmail } = await getUserTransporter(
+    userId,
+    smtpServerId,
+  );
 
   // Generate tracking ID
   const trackingId = generateTrackingId();

@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
-import { CreateCampaignDialog } from "@/components/campaigns/create-campaign-dialog";
-import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { CreateCampaignDialog } from "@/components/campaigns/create-campaign-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Campaign {
   _id: string;
@@ -71,7 +71,8 @@ export function EmailComposerForm() {
     // Check if user has SMTP configured
     if (smtpServers.length === 0) {
       toast.error("No SMTP server configured", {
-        description: "Please add an SMTP server in settings before sending emails",
+        description:
+          "Please add an SMTP server in settings before sending emails",
         action: {
           label: "Add SMTP",
           onClick: () => router.push("/dashboard/smtp-servers"),

@@ -1,4 +1,4 @@
-import { Email, BounceEvent } from "@/db/models";
+import { BounceEvent, Email } from "@/db/models";
 
 interface BounceData {
   trackingId: string;

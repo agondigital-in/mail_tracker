@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { logOpenEvent } from "@/services/tracking.service";
 
 // 1x1 transparent GIF in base64

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { Email } from "@/db/models";
 import { auth } from "@/lib/auth";
 import { getCampaignById, getCampaignStats } from "@/services/campaign.service";
-import { Email } from "@/db/models";
 
 export async function GET(
   request: NextRequest,

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { logBounceEvent } from "@/services/bounce.service";
 
 export async function POST(request: NextRequest) {

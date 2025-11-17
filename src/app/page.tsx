@@ -1,9 +1,9 @@
-import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { Mail } from "lucide-react";
 import { headers } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Mail } from "lucide-react";
+import { auth } from "@/lib/auth";
 
 export default async function Home() {
   const session = await auth.api.getSession({
@@ -35,7 +35,12 @@ export default async function Home() {
             <Button asChild size="lg" className="text-lg px-8">
               <Link href="/login">Login</Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="text-lg px-8">
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="text-lg px-8"
+            >
               <Link href="/signup">Sign Up</Link>
             </Button>
           </div>

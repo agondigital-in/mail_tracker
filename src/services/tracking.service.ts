@@ -1,4 +1,4 @@
-import { Email, OpenEvent, ClickEvent } from "@/db/models";
+import { ClickEvent, Email, OpenEvent } from "@/db/models";
 
 interface EventMetadata {
   ipAddress: string;
