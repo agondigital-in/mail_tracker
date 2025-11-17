@@ -18,64 +18,87 @@ import { Plus } from "lucide-react";
 interface AddSmtpServerDialogProps {
 	onSuccess?: () => void;
 	trigger?: React.ReactNode;
+	editData?: {
+		_id: string;
+		name: string;
+		host: string;
+		port: number;
+		secure: boolean;
+		username: string;
+		fromEmail: string;
+		fromName: string;
+		isDefault: boolean;
+	};
 }
 
 export function AddSmtpServerDialog({
 	onSuccess,
 	trigger,
+	editData,
 }: AddSmtpServerDialogProps) {
-	const [name, setName] = useState("");
-	const [host, setHost] = useState("");
-	const [port, setPort] = useState("587");
-	const [secure, setSecure] = useState(false);
-	const [username, setUsername] = useState("");
+	const [name, setName] = useState(editData?.name || "");
+	const [host, setHost] = useState(editData?.host || "");
+	const [port, setPort] = useState(editData?.port?.toString() || "587");
+	const [secure, setSecure] = useState(editData?.secure || false);
+	const [username, setUsername] = useState(editData?.username || "");
 	const [password, setPassword] = useState("");
-	const [fromEmail, setFromEmail] = useState("");
-	const [fromName, setFromName] = useState("");
-	const [isDefault, setIsDefault] = useState(false);
+	const [fromEmail, setFromEmail] = useState(editData?.fromEmail || "");
+	const [fromName, setFromName] = useState(editData?.fromName || "");
+	const [isDefault, setIsDefault] = useState(editData?.isDefault || false);
 	const [loading, setLoading] = useState(false);
 	const [open, setOpen] = useState(false);
+
+	const isEditMode = !!editData;
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setLoading(true);
 
 		try {
-			const response = await fetch("/api/smtp-servers/create", {
+			const endpoint = isEditMode ? "/api/smtp-servers/update" : "/api/smtp-servers/create";
+			const payload: any = {
+				name,
+				host,
+				port: parseInt(port),
+				secure,
+				username,
+				password,
+				fromEmail,
+				fromName,
+				isDefault,
+			};
+
+			if (isEditMode) {
+				payload.smtpServerId = editData._id;
+			}
+
+			const response = await fetch(endpoint, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					name,
-					host,
-					port: parseInt(port),
-					secure,
-					username,
-					password,
-					fromEmail,
-					fromName,
-					isDefault,
-				}),
+				body: JSON.stringify(payload),
 			});
 
 			const data = await response.json();
 
 			if (data.success) {
-				toast.success("SMTP server added successfully!");
-				setName("");
-				setHost("");
-				setPort("587");
-				setSecure(false);
-				setUsername("");
-				setPassword("");
-				setFromEmail("");
-				setFromName("");
-				setIsDefault(false);
+				toast.success(isEditMode ? "SMTP server updated successfully!" : "SMTP server added successfully!");
+				if (!isEditMode) {
+					setName("");
+					setHost("");
+					setPort("587");
+					setSecure(false);
+					setUsername("");
+					setPassword("");
+					setFromEmail("");
+					setFromName("");
+					setIsDefault(false);
+				}
 				setOpen(false);
 				if (onSuccess) {
 					onSuccess();
 				}
 			} else {
-				toast.error("Failed to add SMTP server", {
+				toast.error(isEditMode ? "Failed to update SMTP server" : "Failed to add SMTP server", {
 					description: data.error || "Please try again",
 				});
 			}
@@ -83,7 +106,7 @@ export function AddSmtpServerDialog({
 			toast.error("Network error", {
 				description: "Please check your connection and try again",
 			});
-			console.error("Error adding SMTP server:", err);
+			console.error("Error with SMTP server:", err);
 		} finally {
 			setLoading(false);
 		}
@@ -101,9 +124,9 @@ export function AddSmtpServerDialog({
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle>Add SMTP Server</DialogTitle>
+					<DialogTitle>{isEditMode ? "Edit SMTP Server" : "Add SMTP Server"}</DialogTitle>
 					<DialogDescription>
-						Configure your email sending server
+						{isEditMode ? "Update your email sending server configuration" : "Configure your email sending server"}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -167,16 +190,21 @@ export function AddSmtpServerDialog({
 
 					<Field>
 						<FieldLabel htmlFor="password">
-							Password <span className="text-red-500">*</span>
+							Password {!isEditMode && <span className="text-red-500">*</span>}
 						</FieldLabel>
 						<Input
 							id="password"
 							type="password"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
-							placeholder="your-password"
-							required
+							placeholder={isEditMode ? "Leave blank to keep current password" : "your-password"}
+							required={!isEditMode}
 						/>
+						{isEditMode && (
+							<p className="text-xs text-muted-foreground mt-1">
+								Leave blank to keep current password
+							</p>
+						)}
 					</Field>
 
 					<Field>
@@ -243,7 +271,7 @@ export function AddSmtpServerDialog({
 							Cancel
 						</Button>
 						<Button type="submit" disabled={loading}>
-							{loading ? "Adding..." : "Add SMTP Server"}
+							{loading ? (isEditMode ? "Updating..." : "Adding...") : (isEditMode ? "Update SMTP Server" : "Add SMTP Server")}
 						</Button>
 					</div>
 				</form>

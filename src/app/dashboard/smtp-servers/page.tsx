@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Server, Plus, Trash2 } from "lucide-react";
+import { Server, Plus, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddSmtpServerDialog } from "@/components/smtp/add-smtp-server-dialog";
@@ -12,6 +12,8 @@ interface SmtpServer {
 	name: string;
 	host: string;
 	port: number;
+	secure: boolean;
+	username: string;
 	fromEmail: string;
 	fromName: string;
 	isDefault: boolean;
@@ -137,11 +139,21 @@ export default function SmtpServersPage() {
 									</div>
 								</div>
 								<div className="mt-4 flex gap-2">
+									<AddSmtpServerDialog
+										editData={server}
+										onSuccess={fetchSmtpServers}
+										trigger={
+											<Button variant="outline" size="sm" className="flex-1">
+												<Edit className="w-4 h-4 mr-2" />
+												Edit
+											</Button>
+										}
+									/>
 									<Button
 										variant="destructive"
 										size="sm"
 										onClick={() => handleDelete(server._id)}
-										className="w-full"
+										className="flex-1"
 									>
 										<Trash2 className="w-4 h-4 mr-2" />
 										Delete
