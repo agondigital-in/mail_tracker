@@ -52,7 +52,7 @@ export function BulkEmailForm() {
       if (data.success) {
         setSmtpServers(data.smtpServers);
         // Auto-select default SMTP
-        const defaultSmtp = data.smtpServers.find((s) => s.isDefault);
+        const defaultSmtp = data.smtpServers.find((s: any) => s.isDefault);
         if (defaultSmtp) {
           setSelectedSmtp(defaultSmtp._id);
         }

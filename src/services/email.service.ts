@@ -84,7 +84,7 @@ export async function sendEmail(data: SendEmailData) {
     campaignId: campaignId || undefined,
     trackingId,
     to,
-    from: from || "",
+    from: fromEmail || "",
     subject,
     htmlContent: processedHtml,
     sentAt: new Date(),
