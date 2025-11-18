@@ -8,6 +8,7 @@ interface SendEmailData {
   subject: string;
   html: string;
   campaignId?: string;
+  recipientId?: string;
   smtpServerId?: string;
 }
 
@@ -56,7 +57,8 @@ export function processHtmlContent(html: string, trackingId: string): string {
  * Send email with tracking
  */
 export async function sendEmail(data: SendEmailData) {
-  const { userId, to, subject, html, campaignId, smtpServerId } = data;
+  const { userId, to, subject, html, campaignId, recipientId, smtpServerId } =
+    data;
 
   // Get user's transporter and from email
   const { transporter, fromEmail } = await getUserTransporter(
@@ -82,11 +84,14 @@ export async function sendEmail(data: SendEmailData) {
   const email = await Email.create({
     userId,
     campaignId: campaignId || undefined,
+    recipientId: recipientId || undefined,
     trackingId,
     to,
     from: fromEmail || "",
     subject,
     htmlContent: processedHtml,
+    status: "sent",
+    smtpServerId: smtpServerId || undefined,
     sentAt: new Date(),
     bounced: false,
     uniqueOpens: 0,

@@ -37,6 +37,13 @@ SMTP_FROM=YourApp <your-email@gmail.com>
 
 # Webhook Configuration (Optional - for bounce handling)
 WEBHOOK_SECRET=your-webhook-secret-key
+
+# Agenda Job Queue Configuration (for bulk campaigns)
+AGENDA_COLLECTION=agendaJobs
+MAX_CAMPAIGN_SIZE=50000
+MAX_FILE_SIZE_MB=10
+UNSUBSCRIBE_SECRET=your-unsubscribe-secret-key
+ENCRYPTION_KEY=your-32-character-encryption-key
 ```
 
 ### SMTP Setup

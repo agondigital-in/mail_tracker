@@ -6,11 +6,20 @@ const emailSchema = new Schema(
   {
     userId: { type: String, ref: "User", required: true, index: true },
     campaignId: { type: Schema.Types.ObjectId, ref: "Campaign", index: true },
+    recipientId: { type: Schema.Types.ObjectId, ref: "Recipient", index: true },
     trackingId: { type: String, required: true, unique: true, index: true },
     to: { type: String, required: true },
     from: { type: String, required: true },
     subject: { type: String, required: true },
     htmlContent: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["sent", "failed", "bounced"],
+      default: "sent",
+      index: true,
+    },
+    error: { type: String },
+    smtpServerId: { type: Schema.Types.ObjectId, ref: "SmtpServer" },
     sentAt: { type: Date, required: true },
     firstOpenAt: { type: Date },
     firstClickAt: { type: Date },
@@ -27,6 +36,11 @@ const emailSchema = new Schema(
     collection: "emails",
   },
 );
+
+// Compound index to prevent duplicate sends and fast lookups
+emailSchema.index({ campaignId: 1, recipientId: 1 }, { unique: true, sparse: true });
+emailSchema.index({ campaignId: 1, status: 1 });
+emailSchema.index({ userId: 1, sentAt: -1 });
 
 const Email = models.Email || model("Email", emailSchema);
 

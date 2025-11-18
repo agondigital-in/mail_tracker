@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Mail,
   Settings2,
+  Users,
 } from "lucide-react";
 import type * as React from "react";
 
@@ -66,6 +67,11 @@ const data = {
       title: "Emails",
       url: "/dashboard/emails",
       icon: Inbox,
+    },
+    {
+      title: "Recipient Lists",
+      url: "/dashboard/recipient-lists",
+      icon: Users,
     },
     {
       title: "Settings",
