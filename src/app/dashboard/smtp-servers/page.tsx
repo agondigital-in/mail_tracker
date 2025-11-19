@@ -1,11 +1,19 @@
 "use client";
 
-import { Edit, Plus, Server, Trash2 } from "lucide-react";
+import { Edit, Plus, Server, TestTube, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AddSmtpServerDialog } from "@/components/smtp/add-smtp-server-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface SmtpServer {
   _id: string;
@@ -22,6 +30,10 @@ interface SmtpServer {
 export default function SmtpServersPage() {
   const [smtpServers, setSmtpServers] = useState<SmtpServer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [selectedServer, setSelectedServer] = useState<SmtpServer | null>(null);
+  const [testEmail, setTestEmail] = useState("");
 
   const fetchSmtpServers = useCallback(async () => {
     try {
@@ -40,6 +52,44 @@ export default function SmtpServersPage() {
   useEffect(() => {
     fetchSmtpServers();
   }, [fetchSmtpServers]);
+
+  const openTestDialog = (server: SmtpServer) => {
+    setSelectedServer(server);
+    setTestEmail("");
+    setTestDialogOpen(true);
+  };
+
+  const handleTest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedServer || !testEmail) return;
+
+    setTesting(selectedServer._id);
+
+    try {
+      const response = await fetch("/api/smtp-servers/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          smtpServerId: selectedServer._id,
+          testEmail,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message || "Test email sent successfully!");
+        setTestDialogOpen(false);
+        setTestEmail("");
+      } else {
+        toast.error(data.error || "Failed to send test email");
+      }
+    } catch (error) {
+      toast.error("Error testing SMTP server");
+      console.error("Error:", error);
+    } finally {
+      setTesting(null);
+    }
+  };
 
   const handleDelete = async (smtpServerId: string) => {
     if (!confirm("Are you sure you want to delete this SMTP server?")) {
@@ -142,32 +192,87 @@ export default function SmtpServersPage() {
                     </span>
                   </div>
                 </div>
-                <div className="mt-4 flex gap-2">
-                  <AddSmtpServerDialog
-                    editData={server}
-                    onSuccess={fetchSmtpServers}
-                    trigger={
-                      <Button variant="outline" size="sm" className="flex-1">
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit
-                      </Button>
-                    }
-                  />
+                <div className="mt-4 flex flex-col gap-2">
                   <Button
-                    variant="destructive"
+                    variant="secondary"
                     size="sm"
-                    onClick={() => handleDelete(server._id)}
-                    className="flex-1"
+                    onClick={() => openTestDialog(server)}
+                    disabled={testing === server._id}
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
+                    <TestTube className="w-4 h-4 mr-2" />
+                    {testing === server._id ? "Testing..." : "Test Connection"}
                   </Button>
+                  <div className="flex gap-2">
+                    <AddSmtpServerDialog
+                      editData={server}
+                      onSuccess={fetchSmtpServers}
+                      trigger={
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </Button>
+                      }
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(server._id)}
+                      className="flex-1"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Test SMTP Server</DialogTitle>
+          </DialogHeader>
+          {selectedServer && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <p className="text-sm font-medium mb-2">Testing Server:</p>
+                <p className="text-lg font-semibold">{selectedServer.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedServer.host}:{selectedServer.port}
+                </p>
+              </div>
+              <form onSubmit={handleTest} className="space-y-4">
+                <div>
+                  <Label htmlFor="testEmail">Send Test Email To</Label>
+                  <Input
+                    id="testEmail"
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="recipient@example.com"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    A test email will be sent to this address
+                  </p>
+                </div>
+                <Button
+                  type="submit"
+                  disabled={testing === selectedServer._id || !testEmail}
+                  className="w-full"
+                >
+                  {testing === selectedServer._id
+                    ? "Sending Test Email..."
+                    : "Send Test Email"}
+                </Button>
+              </form>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
