@@ -43,9 +43,10 @@ export default function RecipientListsPage() {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     fetchLists();
-  }, [fetchLists]);
+  }, []);
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreating(true);

@@ -15,12 +15,6 @@ export default function CampaignMonitorPage() {
   const [progress, setProgress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchProgress();
-    const interval = setInterval(fetchProgress, 5000); // Poll every 5 seconds
-    return () => clearInterval(interval);
-  }, [fetchProgress]);
-
   const fetchProgress = async () => {
     try {
       const response = await fetch(`/api/campaigns/${campaignId}/progress`);
@@ -35,6 +29,13 @@ export default function CampaignMonitorPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProgress();
+    const interval = setInterval(fetchProgress, 5000); // Poll every 5 seconds
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId]);
 
   const handlePause = async () => {
     try {

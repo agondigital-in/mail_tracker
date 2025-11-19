@@ -31,10 +31,6 @@ export default function RecipientListDetailPage() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
   const fetchData = async () => {
     try {
       const response = await fetch(`/api/recipient-lists/${listId}`);
@@ -50,6 +46,10 @@ export default function RecipientListDetailPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchData();
+  }, [listId]);
 
   const handleFileUpload = async (e: React.FormEvent) => {
     e.preventDefault();
