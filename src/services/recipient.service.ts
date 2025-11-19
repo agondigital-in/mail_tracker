@@ -59,6 +59,7 @@ export async function addRecipient(userId: string, data: AddRecipientData) {
 
 	// Create recipient
 	const recipient = await Recipient.create({
+		userId,
 		recipientListId: data.listId,
 		email: data.email.toLowerCase(),
 		name: data.name,
@@ -230,11 +231,11 @@ export async function uploadRecipients(
 		throw new Error("Unsupported file format. Please upload CSV or Excel file.");
 	}
 
-	// Get existing emails in one query (much faster than checking one by one)
+	// Get existing emails in one query for this user's list (much faster than checking one by one)
 	const existingEmails = new Set(
 		(
 			await Recipient.find(
-				{ recipientListId: listId },
+				{ userId, recipientListId: listId },
 				{ email: 1 },
 			).lean()
 		).map((r) => r.email),
@@ -269,6 +270,7 @@ export async function uploadRecipients(
 			// Add to valid list and mark as existing to prevent duplicates within file
 			existingEmails.add(normalizedEmail);
 			validRecipients.push({
+				userId,
 				recipientListId: listId,
 				email: normalizedEmail,
 				name: recipient.name,
