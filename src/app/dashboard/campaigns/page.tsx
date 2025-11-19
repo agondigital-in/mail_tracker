@@ -1,10 +1,10 @@
 "use client";
 
-import { FolderKanban } from "lucide-react";
+import { FolderKanban, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CampaignList } from "@/components/campaigns/campaign-list";
-import { CreateCampaignDialog } from "@/components/campaigns/create-campaign-dialog";
+import { Button } from "@/components/ui/button";
 
 export default function CampaignsPage() {
   const router = useRouter();
@@ -30,9 +30,8 @@ export default function CampaignsPage() {
     fetchCampaigns();
   }, [fetchCampaigns]);
 
-  const handleSuccess = (campaignId: string) => {
-    fetchCampaigns();
-    router.push(`/dashboard/campaigns/${campaignId}`);
+  const handleCreateCampaign = () => {
+    router.push("/dashboard/bulk-compose");
   };
 
   if (loading) {
@@ -57,7 +56,10 @@ export default function CampaignsPage() {
             Organize and track your email campaigns
           </p>
         </div>
-        <CreateCampaignDialog onSuccess={handleSuccess} />
+        <Button onClick={handleCreateCampaign}>
+          <Plus className="w-4 h-4 mr-2" />
+          Create Campaign
+        </Button>
       </div>
 
       <CampaignList campaigns={campaigns} />

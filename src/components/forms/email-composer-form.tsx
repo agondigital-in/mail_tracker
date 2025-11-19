@@ -4,7 +4,6 @@ import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { CreateCampaignDialog } from "@/components/campaigns/create-campaign-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -159,37 +158,18 @@ export function EmailComposerForm() {
 
           <Field>
             <FieldLabel htmlFor="campaign">Campaign (Optional)</FieldLabel>
-            <div className="flex gap-2">
-              <Select value={campaignId} onValueChange={setCampaignId}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="No campaign selected" />
-                </SelectTrigger>
-                <SelectContent>
-                  {campaigns.map((campaign) => (
-                    <SelectItem key={campaign._id} value={campaign._id}>
-                      {campaign.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <CreateCampaignDialog
-                onSuccess={(campaignId) => {
-                  fetch("/api/campaigns/list")
-                    .then((res) => res.json())
-                    .then((data) => {
-                      if (data.success) {
-                        setCampaigns(data.campaigns);
-                        setCampaignId(campaignId);
-                      }
-                    });
-                }}
-                trigger={
-                  <Button type="button" variant="outline" size="icon">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                }
-              />
-            </div>
+            <Select value={campaignId} onValueChange={setCampaignId}>
+              <SelectTrigger>
+                <SelectValue placeholder="No campaign selected" />
+              </SelectTrigger>
+              <SelectContent>
+                {campaigns.map((campaign) => (
+                  <SelectItem key={campaign._id} value={campaign._id}>
+                    {campaign.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
 
           <Field>
