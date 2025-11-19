@@ -5,7 +5,7 @@ const { Schema, model, models } = mongoose;
 const emailSchema = new Schema(
   {
     userId: { type: String, ref: "User", required: true, index: true },
-    campaignId: { type: Schema.Types.ObjectId, ref: "Campaign", index: true },
+    campaignId: { type: Schema.Types.ObjectId, ref: "Campaign" },
     recipientId: { type: Schema.Types.ObjectId, ref: "Recipient", index: true },
     trackingId: { type: String, required: true, unique: true, index: true },
     to: { type: String, required: true },
