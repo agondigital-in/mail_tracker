@@ -213,7 +213,7 @@ export async function pauseCampaign(campaignId: string, userId: string) {
 }
 
 /**
- * Resume a paused campaign
+ * Resume a paused or cancelled campaign
  */
 export async function resumeCampaign(campaignId: string, userId: string) {
   const campaign = await Campaign.findOne({ _id: campaignId, userId });
@@ -222,12 +222,24 @@ export async function resumeCampaign(campaignId: string, userId: string) {
     throw new Error("Campaign not found or unauthorized");
   }
 
-  if (campaign.status !== "paused") {
-    throw new Error("Only paused campaigns can be resumed");
+  if (campaign.status !== "paused" && campaign.status !== "cancelled") {
+    throw new Error("Only paused or cancelled campaigns can be resumed");
+  }
+
+  // Determine new status based on schedule
+  let newStatus = "processing";
+  if (campaign.schedule?.type === "scheduled" || campaign.schedule?.type === "recurring") {
+    // Check if scheduled time is in future
+    if (campaign.schedule.startDate) {
+      const startDate = new Date(campaign.schedule.startDate);
+      if (startDate > new Date()) {
+        newStatus = "scheduled";
+      }
+    }
   }
 
   // Update campaign status
-  campaign.status = "processing";
+  campaign.status = newStatus;
   await campaign.save();
 
   // Reschedule Agenda job
@@ -236,9 +248,29 @@ export async function resumeCampaign(campaignId: string, userId: string) {
       ? "process-recurring-campaign"
       : "process-bulk-campaign";
 
-  const job = await agenda.now(jobName, {
-    campaignId: campaign._id.toString(),
-  });
+  let job;
+  
+  if (newStatus === "scheduled" && campaign.schedule?.startDate) {
+    const startDate = new Date(campaign.schedule.startDate);
+    const now = new Date();
+    
+    if (startDate > now) {
+      // Schedule for future
+      job = await agenda.schedule(startDate, jobName, {
+        campaignId: campaign._id.toString(),
+      });
+    } else {
+      // Start immediately if overdue
+      job = await agenda.now(jobName, {
+        campaignId: campaign._id.toString(),
+      });
+    }
+  } else {
+    // Start immediately for processing status
+    job = await agenda.now(jobName, {
+      campaignId: campaign._id.toString(),
+    });
+  }
 
   if (job) {
     campaign.agendaJobId = job.attrs._id?.toString();
@@ -304,5 +336,9 @@ export async function getCampaignProgress(campaignId: string, userId: string) {
     remainingCount: campaign.remainingCount,
     rate: Math.round(rate * 100) / 100,
     failedRecipients: campaign.failedRecipients || [],
+    campaign: {
+      name: campaign.name,
+      schedule: campaign.schedule,
+    },
   };
 }

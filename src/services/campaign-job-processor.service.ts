@@ -71,7 +71,7 @@ function processTemplate(
   recipient: {
     email: string;
     name?: string;
-    customFields?: Map<string, unknown>;
+    customFields?: Map<string, unknown> | Record<string, unknown>;
   },
 ): string {
   const recipientData: Record<string, string | number | boolean> = {
@@ -81,13 +81,27 @@ function processTemplate(
 
   // Add custom fields
   if (recipient.customFields) {
-    for (const [key, value] of recipient.customFields.entries()) {
-      if (
-        typeof value === "string" ||
-        typeof value === "number" ||
-        typeof value === "boolean"
-      ) {
-        recipientData[key] = value;
+    // Handle both Map and plain object
+    if (recipient.customFields instanceof Map) {
+      for (const [key, value] of recipient.customFields.entries()) {
+        if (
+          typeof value === "string" ||
+          typeof value === "number" ||
+          typeof value === "boolean"
+        ) {
+          recipientData[key] = value;
+        }
+      }
+    } else if (typeof recipient.customFields === "object") {
+      // Handle plain object from MongoDB
+      for (const [key, value] of Object.entries(recipient.customFields)) {
+        if (
+          typeof value === "string" ||
+          typeof value === "number" ||
+          typeof value === "boolean"
+        ) {
+          recipientData[key] = value;
+        }
       }
     }
   }
@@ -100,10 +114,13 @@ function processTemplate(
  */
 export async function processCampaign(job: Job<CampaignJobData>) {
   const { campaignId } = job.attrs.data;
+  const executionStartTime = Date.now();
 
   try {
     // Load campaign
-    const campaign = await Campaign.findById(campaignId);
+    const campaign = await Campaign.findById(campaignId).populate(
+      "mailServers.serverId",
+    );
     if (!campaign) {
       throw new Error("Campaign not found");
     }
@@ -160,6 +177,11 @@ export async function processCampaign(job: Job<CampaignJobData>) {
           const processedSubject = processTemplate(campaign.subject, recipient);
 
           // Send email (automatically creates Email record with tracking)
+          // Extract serverId - handle both populated object and string
+          const smtpServerId = typeof serverConfig.serverId === 'object' && serverConfig.serverId !== null && '_id' in serverConfig.serverId
+            ? String((serverConfig.serverId as { _id: unknown })._id)
+            : String(serverConfig.serverId);
+
           await sendEmail({
             userId: campaign.userId,
             to: recipient.email,
@@ -167,7 +189,7 @@ export async function processCampaign(job: Job<CampaignJobData>) {
             html: processedHtml,
             campaignId: campaign._id.toString(),
             recipientId: (recipient as { _id?: unknown })._id?.toString(),
-            smtpServerId: serverConfig.serverId.toString(),
+            smtpServerId,
           });
 
           batchSuccessCount++;
@@ -193,6 +215,11 @@ export async function processCampaign(job: Job<CampaignJobData>) {
           // Track failed email in Email collection
           const recipientWithId = recipient as { _id?: unknown };
           if (recipientWithId._id) {
+            // Extract serverId - handle both populated object and string
+            const smtpServerId = typeof serverConfig.serverId === 'object' && serverConfig.serverId !== null && '_id' in serverConfig.serverId
+              ? String((serverConfig.serverId as { _id: unknown })._id)
+              : String(serverConfig.serverId);
+
             await Email.create({
               userId: campaign.userId,
               campaignId: campaign._id,
@@ -204,7 +231,7 @@ export async function processCampaign(job: Job<CampaignJobData>) {
               htmlContent: campaign.htmlContent,
               status: "failed",
               error: error instanceof Error ? error.message : "Unknown error",
-              smtpServerId: serverConfig.serverId,
+              smtpServerId,
               sentAt: new Date(),
               bounced: false,
               uniqueOpens: 0,
@@ -238,17 +265,67 @@ export async function processCampaign(job: Job<CampaignJobData>) {
       }
     }
 
-    // Mark campaign as completed
+    // Calculate execution duration
+    const executionDuration = Math.floor((Date.now() - executionStartTime) / 1000);
+
+    // Get SMTP stats
+    const smtpStats = await Promise.all(
+      campaign.mailServers.map(async (server: any, index: number) => {
+        const serverData = server.serverId;
+        // Extract serverId - handle both populated object and string
+        const serverId = typeof server.serverId === 'object' && server.serverId !== null && '_id' in server.serverId
+          ? String((server.serverId as { _id: unknown })._id)
+          : String(server.serverId);
+
+        return {
+          serverId,
+          serverName: serverData?.name || "Unknown",
+          sent: recipientsByServer.get(index)?.length || 0,
+          failed: 0, // Will be updated if we track per-server failures
+        };
+      }),
+    );
+
+    // Get final counts
+    const finalCampaign = await Campaign.findById(campaignId);
+    const totalSent = finalCampaign?.sentCount || 0;
+    const totalFailed = finalCampaign?.failedCount || 0;
+
+    // Add execution log
     await Campaign.findByIdAndUpdate(campaignId, {
       status: "completed",
       completedAt: new Date(),
+      $push: {
+        executionLogs: {
+          executedAt: new Date(),
+          status: totalFailed > 0 ? "partial" : "success",
+          sentCount: totalSent,
+          failedCount: totalFailed,
+          duration: executionDuration,
+          smtpStats,
+        },
+      },
     });
   } catch (error) {
-    // Mark campaign as failed
+    // Calculate execution duration
+    const executionDuration = Math.floor((Date.now() - executionStartTime) / 1000);
+
+    // Mark campaign as failed and log execution
     await Campaign.findByIdAndUpdate(campaignId, {
       $set: {
         status: "failed",
         completedAt: new Date(),
+      },
+      $push: {
+        executionLogs: {
+          executedAt: new Date(),
+          status: "failed",
+          sentCount: 0,
+          failedCount: 0,
+          duration: executionDuration,
+          smtpStats: [],
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
       },
     });
 

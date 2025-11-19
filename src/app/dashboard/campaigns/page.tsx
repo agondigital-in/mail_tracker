@@ -56,10 +56,18 @@ export default function CampaignsPage() {
             Organize and track your email campaigns
           </p>
         </div>
-        <Button onClick={handleCreateCampaign}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Campaign
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => router.push("/dashboard/campaigns/manage")}
+          >
+            Manage Campaigns
+          </Button>
+          <Button onClick={handleCreateCampaign}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Campaign
+          </Button>
+        </div>
       </div>
 
       <CampaignList campaigns={campaigns} />

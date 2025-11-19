@@ -139,6 +139,46 @@ const campaignSchema = new mongoose.Schema(
       },
     ],
 
+    // Execution logs for recurring campaigns
+    executionLogs: [
+      {
+        executedAt: {
+          type: Date,
+          required: true,
+        },
+        status: {
+          type: String,
+          enum: ["success", "partial", "failed"],
+          required: true,
+        },
+        sentCount: {
+          type: Number,
+          default: 0,
+        },
+        failedCount: {
+          type: Number,
+          default: 0,
+        },
+        duration: {
+          type: Number, // in seconds
+        },
+        smtpStats: [
+          {
+            serverId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: "SmtpServer",
+            },
+            serverName: String,
+            sent: Number,
+            failed: Number,
+          },
+        ],
+        error: {
+          type: String,
+        },
+      },
+    ],
+
     // Job reference
     agendaJobId: {
       type: String,
