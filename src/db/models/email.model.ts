@@ -38,7 +38,10 @@ const emailSchema = new Schema(
 );
 
 // Compound index to prevent duplicate sends and fast lookups
-emailSchema.index({ campaignId: 1, recipientId: 1 }, { unique: true, sparse: true });
+emailSchema.index(
+  { campaignId: 1, recipientId: 1 },
+  { unique: true, sparse: true },
+);
 emailSchema.index({ campaignId: 1, status: 1 });
 emailSchema.index({ userId: 1, sentAt: -1 });
 

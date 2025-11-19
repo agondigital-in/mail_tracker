@@ -2,15 +2,15 @@ import { type NextRequest, NextResponse } from "next/server";
 import { unsubscribeRecipient } from "@/services/recipient.service";
 
 export async function GET(request: NextRequest) {
-	try {
-		const { searchParams } = new URL(request.url);
-		const recipientId = searchParams.get("recipientId");
-		const token = searchParams.get("token");
+  try {
+    const { searchParams } = new URL(request.url);
+    const recipientId = searchParams.get("recipientId");
+    const token = searchParams.get("token");
 
-		// Validate input
-		if (!recipientId || !token) {
-			return new NextResponse(
-				`
+    // Validate input
+    if (!recipientId || !token) {
+      return new NextResponse(
+        `
 <!DOCTYPE html>
 <html>
 <head>
@@ -26,18 +26,18 @@ export async function GET(request: NextRequest) {
 </body>
 </html>
 				`,
-				{
-					status: 400,
-					headers: { "Content-Type": "text/html" },
-				},
-			);
-		}
+        {
+          status: 400,
+          headers: { "Content-Type": "text/html" },
+        },
+      );
+    }
 
-		// Unsubscribe recipient
-		const result = await unsubscribeRecipient(recipientId, token);
+    // Unsubscribe recipient
+    const result = await unsubscribeRecipient(recipientId, token);
 
-		return new NextResponse(
-			`
+    return new NextResponse(
+      `
 <!DOCTYPE html>
 <html>
 <head>
@@ -56,16 +56,16 @@ export async function GET(request: NextRequest) {
 </body>
 </html>
 			`,
-			{
-				status: 200,
-				headers: { "Content-Type": "text/html" },
-			},
-		);
-	} catch (error) {
-		console.error("Error unsubscribing recipient:", error);
+      {
+        status: 200,
+        headers: { "Content-Type": "text/html" },
+      },
+    );
+  } catch (error) {
+    console.error("Error unsubscribing recipient:", error);
 
-		return new NextResponse(
-			`
+    return new NextResponse(
+      `
 <!DOCTYPE html>
 <html>
 <head>
@@ -81,10 +81,10 @@ export async function GET(request: NextRequest) {
 </body>
 </html>
 			`,
-			{
-				status: 500,
-				headers: { "Content-Type": "text/html" },
-			},
-		);
-	}
+      {
+        status: 500,
+        headers: { "Content-Type": "text/html" },
+      },
+    );
+  }
 }

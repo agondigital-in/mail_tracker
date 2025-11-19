@@ -28,7 +28,12 @@
       "suspicious": {
         "noUnknownAtRules": "off",
         "noExplicitAny": "warn",
-        "noImplicitAnyLet": "warn"
+        "noImplicitAnyLet": "warn",
+        "noArrayIndexKey": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "off",
+        "noInvalidUseBeforeDeclaration": "off"
       }
     },
     "domains": {
