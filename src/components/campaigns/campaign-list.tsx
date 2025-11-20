@@ -88,7 +88,7 @@ function calculateNextExecution(campaign: Campaign): {
   if ((type === "scheduled" || type === "recurring") && startDate) {
     const scheduleDate = new Date(startDate);
     const now = new Date();
-    
+
     if (scheduleDate > now) {
       // Future date
       nextExec = scheduleDate;
@@ -151,10 +151,15 @@ export function CampaignList({ campaigns }: CampaignListProps) {
         const isBulk = campaign.type === "bulk";
 
         return (
-          <Card key={campaign._id} className="hover:shadow-lg transition-shadow">
+          <Card
+            key={campaign._id}
+            className="hover:shadow-lg transition-shadow"
+          >
             <CardHeader>
               <div className="flex items-start justify-between gap-2">
-                <CardTitle className="text-lg flex-1">{campaign.name}</CardTitle>
+                <CardTitle className="text-lg flex-1">
+                  {campaign.name}
+                </CardTitle>
                 {campaign.status && (
                   <span
                     className={`text-xs px-2 py-1 rounded-full border ${getStatusColor(campaign.status)}`}
@@ -175,11 +180,15 @@ export function CampaignList({ campaigns }: CampaignListProps) {
                 <div className="flex items-center gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Sent:</span>{" "}
-                    <span className="font-semibold">{campaign.sentCount || 0}</span>
+                    <span className="font-semibold">
+                      {campaign.sentCount || 0}
+                    </span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Total:</span>{" "}
-                    <span className="font-semibold">{campaign.totalRecipients || 0}</span>
+                    <span className="font-semibold">
+                      {campaign.totalRecipients || 0}
+                    </span>
                   </div>
                 </div>
               )}
@@ -187,25 +196,39 @@ export function CampaignList({ campaigns }: CampaignListProps) {
               {campaign.schedule?.type === "recurring" && (
                 <div className="flex items-center gap-2 text-sm text-purple-600 bg-purple-50 px-3 py-2 rounded-md">
                   <Repeat className="w-4 h-4" />
-                  <span className="capitalize">{campaign.schedule.frequency}</span>
+                  <span className="capitalize">
+                    {campaign.schedule.frequency}
+                  </span>
                 </div>
               )}
 
               {nextExecution && (
-                <div className={`flex items-start gap-2 text-sm px-3 py-2 rounded-md ${nextExecution.isPending ? "bg-orange-50 border border-orange-200" : "bg-blue-50"}`}>
-                  <Clock className={`w-4 h-4 mt-0.5 flex-shrink-0 ${nextExecution.isPending ? "text-orange-600" : "text-blue-600"}`} />
+                <div
+                  className={`flex items-start gap-2 text-sm px-3 py-2 rounded-md ${nextExecution.isPending ? "bg-orange-50 border border-orange-200" : "bg-blue-50"}`}
+                >
+                  <Clock
+                    className={`w-4 h-4 mt-0.5 flex-shrink-0 ${nextExecution.isPending ? "text-orange-600" : "text-blue-600"}`}
+                  />
                   <div className="flex-1">
-                    <p className={`font-medium ${nextExecution.isPending ? "text-orange-600" : "text-blue-600"}`}>
+                    <p
+                      className={`font-medium ${nextExecution.isPending ? "text-orange-600" : "text-blue-600"}`}
+                    >
                       Next Execution
                     </p>
-                    <p className={`font-semibold ${nextExecution.isPending ? "text-orange-800" : "text-blue-800"}`}>
+                    <p
+                      className={`font-semibold ${nextExecution.isPending ? "text-orange-800" : "text-blue-800"}`}
+                    >
                       {nextExecution.relative}
                     </p>
-                    <p className={`text-xs mt-0.5 ${nextExecution.isPending ? "text-orange-600" : "text-blue-600"}`}>
+                    <p
+                      className={`text-xs mt-0.5 ${nextExecution.isPending ? "text-orange-600" : "text-blue-600"}`}
+                    >
                       📅 {nextExecution.date}
                     </p>
                     {nextExecution.isPending && (
-                      <p className="text-xs text-orange-700 mt-1">⚠️ Overdue - will start soon</p>
+                      <p className="text-xs text-orange-700 mt-1">
+                        ⚠️ Overdue - will start soon
+                      </p>
                     )}
                   </div>
                 </div>

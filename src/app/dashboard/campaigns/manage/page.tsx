@@ -131,7 +131,8 @@ export default function CampaignManagePage() {
   };
 
   const canPause = (status: string) => status === "processing";
-  const canResume = (status: string) => status === "paused" || status === "cancelled";
+  const canResume = (status: string) =>
+    status === "paused" || status === "cancelled";
   const canCancel = (status: string) =>
     ["processing", "paused", "scheduled"].includes(status);
 

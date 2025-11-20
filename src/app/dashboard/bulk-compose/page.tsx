@@ -334,16 +334,21 @@ export default function BulkComposePage() {
           />
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <FormLabel>SMTP Servers (with limits)</FormLabel>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => append({ serverId: "", limit: 100 })}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Server
-              </Button>
+            <div className="mb-2">
+              <div className="flex items-center justify-between">
+                <FormLabel>SMTP Servers</FormLabel>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => append({ serverId: "", limit: 100 })}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add Server
+                </Button>
+              </div>
+              <FormDescription>
+                Set how many emails each server can send per execution
+              </FormDescription>
             </div>
             <div className="space-y-3">
               {fields.map((field, index) => (
@@ -379,8 +384,10 @@ export default function BulkComposePage() {
                     control={form.control}
                     name={`smtpConfigs.${index}.limit`}
                     render={({ field }) => (
-                      <FormItem className="w-32">
-                        <FormLabel className="text-xs">Limit</FormLabel>
+                      <FormItem className="w-40">
+                        <FormLabel className="text-xs">
+                          Limit (per execution)
+                        </FormLabel>
                         <FormControl>
                           <Input
                             type="number"

@@ -34,22 +34,23 @@ async function resumePendingCampaigns() {
       // If job exists but campaign is stuck (processing with remaining emails)
       if (existingJobs.length > 0) {
         const job = existingJobs[0];
-        
+
         // Check if campaign is stuck:
         // 1. Status is "processing" with remaining emails
         // 2. Job finished/failed but campaign incomplete
         // 3. Job is running but no progress for 5+ minutes
         const now = new Date();
         const lastRun = job.attrs.lastRunAt || job.attrs.nextRunAt;
-        const timeSinceLastRun = lastRun ? (now.getTime() - new Date(lastRun).getTime()) / 1000 / 60 : 0; // minutes
-        
-        const isStuck = campaign.status === "processing" && 
-                       campaign.remainingCount > 0 &&
-                       (
-                         job.attrs.lastFinishedAt || // Job finished but campaign incomplete
-                         job.attrs.failedAt || // Job failed
-                         timeSinceLastRun > 5 // No progress for 5+ minutes
-                       );
+        const timeSinceLastRun = lastRun
+          ? (now.getTime() - new Date(lastRun).getTime()) / 1000 / 60
+          : 0; // minutes
+
+        const isStuck =
+          campaign.status === "processing" &&
+          campaign.remainingCount > 0 &&
+          (job.attrs.lastFinishedAt || // Job finished but campaign incomplete
+            job.attrs.failedAt || // Job failed
+            timeSinceLastRun > 5); // No progress for 5+ minutes
 
         if (isStuck) {
           console.log(

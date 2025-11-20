@@ -89,7 +89,7 @@ function calculateNextExecution(
   if ((type === "scheduled" || type === "recurring") && startDate) {
     const scheduleDate = new Date(startDate);
     const now = new Date();
-    
+
     if (scheduleDate > now) {
       // Future date
       nextExec = scheduleDate;
@@ -166,7 +166,10 @@ export default function CampaignMonitorPage() {
     if (!progress?.campaign?.schedule) return;
 
     const updateCountdown = () => {
-      const nextExec = calculateNextExecution(progress.campaign, progress.status);
+      const nextExec = calculateNextExecution(
+        progress.campaign,
+        progress.status,
+      );
       if (nextExec && !nextExec.isPending) {
         setCountdown(nextExec.relative);
       }
@@ -248,7 +251,10 @@ export default function CampaignMonitorPage() {
       ? (progress.sentCount / progress.totalRecipients) * 100
       : 0;
 
-  const nextExecution = calculateNextExecution(progress.campaign, progress.status);
+  const nextExecution = calculateNextExecution(
+    progress.campaign,
+    progress.status,
+  );
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -294,18 +300,28 @@ export default function CampaignMonitorPage() {
           <div className="grid gap-4 md:grid-cols-2">
             {/* Next Execution */}
             {nextExecution && (
-              <Card className={`border-l-4 ${nextExecution.isPending ? "border-l-orange-500 bg-orange-50/50" : "border-l-blue-500 bg-blue-50/50"}`}>
+              <Card
+                className={`border-l-4 ${nextExecution.isPending ? "border-l-orange-500 bg-orange-50/50" : "border-l-blue-500 bg-blue-50/50"}`}
+              >
                 <CardHeader>
-                  <CardTitle className={`flex items-center gap-2 text-lg ${nextExecution.isPending ? "text-orange-700" : "text-blue-700"}`}>
-                    <Clock className={`w-5 h-5 ${nextExecution.isPending ? "text-orange-600" : "text-blue-600"}`} />
+                  <CardTitle
+                    className={`flex items-center gap-2 text-lg ${nextExecution.isPending ? "text-orange-700" : "text-blue-700"}`}
+                  >
+                    <Clock
+                      className={`w-5 h-5 ${nextExecution.isPending ? "text-orange-600" : "text-blue-600"}`}
+                    />
                     Next Execution
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <p className={`text-3xl font-bold ${nextExecution.isPending ? "text-orange-900" : "text-blue-900"}`}>
+                  <p
+                    className={`text-3xl font-bold ${nextExecution.isPending ? "text-orange-900" : "text-blue-900"}`}
+                  >
                     {countdown || nextExecution.relative}
                   </p>
-                  <div className={`flex items-center gap-2 text-sm ${nextExecution.isPending ? "text-orange-700" : "text-blue-700"}`}>
+                  <div
+                    className={`flex items-center gap-2 text-sm ${nextExecution.isPending ? "text-orange-700" : "text-blue-700"}`}
+                  >
                     <Calendar className="w-4 h-4" />
                     <p>{nextExecution.date}</p>
                   </div>
@@ -410,7 +426,9 @@ export default function CampaignMonitorPage() {
               <Card className="border-l-4 border-l-gray-500">
                 <CardContent className="pt-6">
                   <p className="text-sm text-muted-foreground mb-1">Total</p>
-                  <p className="text-3xl font-bold">{progress.totalRecipients}</p>
+                  <p className="text-3xl font-bold">
+                    {progress.totalRecipients}
+                  </p>
                 </CardContent>
               </Card>
               <Card className="border-l-4 border-l-green-500">
@@ -423,7 +441,9 @@ export default function CampaignMonitorPage() {
               </Card>
               <Card className="border-l-4 border-l-blue-500">
                 <CardContent className="pt-6">
-                  <p className="text-sm text-muted-foreground mb-1">Remaining</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Remaining
+                  </p>
                   <p className="text-3xl font-bold text-blue-600">
                     {progress.remainingCount}
                   </p>
@@ -444,9 +464,12 @@ export default function CampaignMonitorPage() {
                 <div className="flex items-center gap-2">
                   <Clock className="w-5 h-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Sending Rate</p>
+                    <p className="text-sm text-muted-foreground">
+                      Sending Rate
+                    </p>
                     <p className="text-2xl font-semibold">
-                      {progress.rate} <span className="text-sm">emails/min</span>
+                      {progress.rate}{" "}
+                      <span className="text-sm">emails/min</span>
                     </p>
                   </div>
                 </div>

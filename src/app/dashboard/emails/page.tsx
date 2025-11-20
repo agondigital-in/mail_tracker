@@ -110,7 +110,9 @@ export default function EmailsPage() {
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold text-lg">{email.subject}</p>
+                          <p className="font-semibold text-lg">
+                            {email.subject}
+                          </p>
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                               email.status === "sent"

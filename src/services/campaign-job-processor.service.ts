@@ -178,9 +178,12 @@ export async function processCampaign(job: Job<CampaignJobData>) {
 
           // Send email (automatically creates Email record with tracking)
           // Extract serverId - handle both populated object and string
-          const smtpServerId = typeof serverConfig.serverId === 'object' && serverConfig.serverId !== null && '_id' in serverConfig.serverId
-            ? String((serverConfig.serverId as { _id: unknown })._id)
-            : String(serverConfig.serverId);
+          const smtpServerId =
+            typeof serverConfig.serverId === "object" &&
+            serverConfig.serverId !== null &&
+            "_id" in serverConfig.serverId
+              ? String((serverConfig.serverId as { _id: unknown })._id)
+              : String(serverConfig.serverId);
 
           await sendEmail({
             userId: campaign.userId,
@@ -216,9 +219,12 @@ export async function processCampaign(job: Job<CampaignJobData>) {
           const recipientWithId = recipient as { _id?: unknown };
           if (recipientWithId._id) {
             // Extract serverId - handle both populated object and string
-            const smtpServerId = typeof serverConfig.serverId === 'object' && serverConfig.serverId !== null && '_id' in serverConfig.serverId
-              ? String((serverConfig.serverId as { _id: unknown })._id)
-              : String(serverConfig.serverId);
+            const smtpServerId =
+              typeof serverConfig.serverId === "object" &&
+              serverConfig.serverId !== null &&
+              "_id" in serverConfig.serverId
+                ? String((serverConfig.serverId as { _id: unknown })._id)
+                : String(serverConfig.serverId);
 
             await Email.create({
               userId: campaign.userId,
@@ -266,16 +272,21 @@ export async function processCampaign(job: Job<CampaignJobData>) {
     }
 
     // Calculate execution duration
-    const executionDuration = Math.floor((Date.now() - executionStartTime) / 1000);
+    const executionDuration = Math.floor(
+      (Date.now() - executionStartTime) / 1000,
+    );
 
     // Get SMTP stats
     const smtpStats = await Promise.all(
       campaign.mailServers.map(async (server: any, index: number) => {
         const serverData = server.serverId;
         // Extract serverId - handle both populated object and string
-        const serverId = typeof server.serverId === 'object' && server.serverId !== null && '_id' in server.serverId
-          ? String((server.serverId as { _id: unknown })._id)
-          : String(server.serverId);
+        const serverId =
+          typeof server.serverId === "object" &&
+          server.serverId !== null &&
+          "_id" in server.serverId
+            ? String((server.serverId as { _id: unknown })._id)
+            : String(server.serverId);
 
         return {
           serverId,
@@ -308,7 +319,9 @@ export async function processCampaign(job: Job<CampaignJobData>) {
     });
   } catch (error) {
     // Calculate execution duration
-    const executionDuration = Math.floor((Date.now() - executionStartTime) / 1000);
+    const executionDuration = Math.floor(
+      (Date.now() - executionStartTime) / 1000,
+    );
 
     // Mark campaign as failed and log execution
     await Campaign.findByIdAndUpdate(campaignId, {
@@ -497,7 +510,9 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
     ).lean();
 
     const processedRecipientIds = new Set(
-      processedEmails.map((email) => email.recipientId?.toString()).filter(Boolean),
+      processedEmails
+        .map((email) => email.recipientId?.toString())
+        .filter(Boolean),
     );
 
     // Filter out recipients who already received email (sent or failed)

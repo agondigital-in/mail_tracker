@@ -214,17 +214,19 @@ export async function PUT(
 
         // Preserve 'sent' count from existing servers
         const existingServers = campaign.mailServers || [];
-        updateData.mailServers = mailServers.map((newServer: { serverId: string; limit: number; sent?: number }) => {
-          const existing = existingServers.find(
-            (s: { serverId: { toString: () => string } }) =>
-              s.serverId.toString() === newServer.serverId,
-          );
-          return {
-            serverId: newServer.serverId,
-            limit: newServer.limit,
-            sent: existing?.sent || newServer.sent || 0,
-          };
-        });
+        updateData.mailServers = mailServers.map(
+          (newServer: { serverId: string; limit: number; sent?: number }) => {
+            const existing = existingServers.find(
+              (s: { serverId: { toString: () => string } }) =>
+                s.serverId.toString() === newServer.serverId,
+            );
+            return {
+              serverId: newServer.serverId,
+              limit: newServer.limit,
+              sent: existing?.sent || newServer.sent || 0,
+            };
+          },
+        );
       }
     }
 

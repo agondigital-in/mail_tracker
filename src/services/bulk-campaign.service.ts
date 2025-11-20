@@ -228,7 +228,10 @@ export async function resumeCampaign(campaignId: string, userId: string) {
 
   // Determine new status based on schedule
   let newStatus = "processing";
-  if (campaign.schedule?.type === "scheduled" || campaign.schedule?.type === "recurring") {
+  if (
+    campaign.schedule?.type === "scheduled" ||
+    campaign.schedule?.type === "recurring"
+  ) {
     // Check if scheduled time is in future
     if (campaign.schedule.startDate) {
       const startDate = new Date(campaign.schedule.startDate);
@@ -249,11 +252,11 @@ export async function resumeCampaign(campaignId: string, userId: string) {
       : "process-bulk-campaign";
 
   let job;
-  
+
   if (newStatus === "scheduled" && campaign.schedule?.startDate) {
     const startDate = new Date(campaign.schedule.startDate);
     const now = new Date();
-    
+
     if (startDate > now) {
       // Schedule for future
       job = await agenda.schedule(startDate, jobName, {
