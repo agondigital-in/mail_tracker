@@ -39,7 +39,9 @@ export async function GET(
     const stats = await getCampaignStats(id);
 
     // Get all emails in the campaign
-    const emails = await Email.find({ campaignId: id }).sort({ sentAt: -1 });
+    const emails = await Email.find({ campaignId: id })
+      .sort({ sentAt: -1 })
+      .populate("smtpServerId", "name host");
 
     return NextResponse.json({
       success: true,

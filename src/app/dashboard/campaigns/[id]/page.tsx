@@ -35,11 +35,14 @@ interface CampaignData {
   emails: Array<{
     _id: string;
     to: string;
+    from: string;
     subject: string;
     sentAt: string;
     uniqueOpens: number;
     uniqueClicks: number;
     bounced: boolean;
+    status: string;
+    smtpServerId?: { _id: string; name: string };
   }>;
 }
 
@@ -248,11 +251,33 @@ export default function CampaignDetailPage() {
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <p className="font-semibold text-lg">{email.subject}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-semibold text-lg">{email.subject}</p>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            email.status === "sent"
+                              ? "bg-green-100 text-green-800"
+                              : email.status === "failed"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {email.status}
+                        </span>
+                      </div>
                       <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                         <Mail className="w-3 h-3" />
                         To: {email.to}
                       </p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                        From: {email.from}
+                      </p>
+                      {email.smtpServerId && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Server: {email.smtpServerId.name} (
+                          {email.smtpServerId._id})
+                        </p>
+                      )}
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(email.sentAt).toLocaleString()}
                       </p>

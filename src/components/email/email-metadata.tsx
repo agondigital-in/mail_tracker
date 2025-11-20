@@ -13,7 +13,9 @@ interface EmailMetadataProps {
     totalClicks: number;
     bounced: boolean;
     bounceReason?: string;
-    campaignId?: { name: string };
+    status?: string;
+    campaignId?: { _id: string; name: string };
+    smtpServerId?: { _id: string; name: string; host: string };
   };
 }
 
@@ -42,11 +44,38 @@ export function EmailMetadata({ email }: EmailMetadataProps) {
             <p className="font-medium">{email.subject}</p>
           </div>
           <div>
+            <p className="text-sm text-muted-foreground">Status</p>
+            <p className="font-medium">
+              <span
+                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                  email.status === "sent"
+                    ? "bg-green-100 text-green-800"
+                    : email.status === "failed"
+                      ? "bg-red-100 text-red-800"
+                      : "bg-gray-100 text-gray-800"
+                }`}
+              >
+                {email.status || "unknown"}
+              </span>
+            </p>
+          </div>
+          <div>
             <p className="text-sm text-muted-foreground">Sent At</p>
             <p className="font-medium">
               {new Date(email.sentAt).toLocaleString()}
             </p>
           </div>
+          {email.smtpServerId && (
+            <div>
+              <p className="text-sm text-muted-foreground">SMTP Server</p>
+              <p className="font-medium">
+                {email.smtpServerId.name} ({email.smtpServerId._id})
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {email.smtpServerId.host}
+              </p>
+            </div>
+          )}
           <div>
             <p className="text-sm text-muted-foreground">Tracking ID</p>
             <p className="font-mono text-xs">{email.trackingId}</p>

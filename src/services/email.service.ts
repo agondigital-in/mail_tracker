@@ -113,7 +113,9 @@ export async function getEmailById(emailId: string, userId: string) {
   const email = await Email.findOne({
     _id: emailId,
     userId,
-  });
+  })
+    .populate("campaignId", "name")
+    .populate("smtpServerId", "name host");
 
   return email;
 }
@@ -142,7 +144,8 @@ export async function listEmails(
       .sort({ sentAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate("campaignId", "name"),
+      .populate("campaignId", "name")
+      .populate("smtpServerId", "name host"),
     Email.countDocuments(query),
   ]);
 
