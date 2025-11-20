@@ -1,4 +1,4 @@
-import { Calendar, Clock, Eye, Repeat } from "lucide-react";
+import { Calendar, Clock, Edit, Eye, Repeat } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -217,14 +217,22 @@ export function CampaignList({ campaigns }: CampaignListProps) {
               </div>
 
               <div className="flex gap-2">
-                <Button asChild variant="outline" className="flex-1">
+                <Button asChild variant="outline" size="sm">
                   <Link href={`/dashboard/campaigns/${campaign._id}`}>
                     <Eye className="w-4 h-4 mr-2" />
                     View
                   </Link>
                 </Button>
+                {campaign.status !== "processing" && (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/dashboard/campaigns/${campaign._id}/edit`}>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </Link>
+                  </Button>
+                )}
                 {isBulk && campaign.status !== "completed" && (
-                  <Button asChild variant="default" className="flex-1">
+                  <Button asChild variant="default" size="sm">
                     <Link href={`/dashboard/campaigns/${campaign._id}/monitor`}>
                       Monitor
                     </Link>

@@ -2,6 +2,7 @@
 
 import {
   ArrowLeft,
+  Edit,
   FolderKanban,
   Mail,
   MailOpen,
@@ -20,6 +21,7 @@ interface CampaignData {
     _id: string;
     name: string;
     description?: string;
+    status?: string;
     createdAt: string;
   };
   stats: {
@@ -120,12 +122,22 @@ export default function CampaignDetailPage() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl space-y-8">
       <div>
-        <Button asChild variant="outline" className="mb-4 gap-2">
-          <Link href="/dashboard/campaigns">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Campaigns
-          </Link>
-        </Button>
+        <div className="flex items-center justify-between mb-4">
+          <Button asChild variant="outline" className="gap-2">
+            <Link href="/dashboard/campaigns">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Campaigns
+            </Link>
+          </Button>
+          {data.campaign.status !== "processing" && (
+            <Button asChild variant="outline" className="gap-2">
+              <Link href={`/dashboard/campaigns/${params.id}/edit`}>
+                <Edit className="w-4 h-4" />
+                Edit Campaign
+              </Link>
+            </Button>
+          )}
+        </div>
 
         <div className="flex items-center gap-3 mb-2">
           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
