@@ -484,20 +484,26 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
     // Get active recipients (optimized single query)
     const allRecipients = await getActiveRecipients(campaign);
 
-    // Get already sent recipient IDs from Email collection (prevent duplicates)
-    const sentEmails = await Email.find(
-      { campaignId: campaign._id, status: "sent" },
+    // Update total recipients count (in case list was updated)
+    // Note: remainingCount will be calculated after filtering sent emails
+    await Campaign.findByIdAndUpdate(campaignId, {
+      totalRecipients: allRecipients.length,
+    });
+
+    // Get already sent/failed recipient IDs from Email collection (prevent duplicates and retries)
+    const processedEmails = await Email.find(
+      { campaignId: campaign._id, status: { $in: ["sent", "failed"] } },
       { recipientId: 1 },
     ).lean();
 
-    const sentRecipientIds = new Set(
-      sentEmails.map((sent) => sent.recipientId?.toString()).filter(Boolean),
+    const processedRecipientIds = new Set(
+      processedEmails.map((email) => email.recipientId?.toString()).filter(Boolean),
     );
 
-    // Filter out recipients who already received email
+    // Filter out recipients who already received email (sent or failed)
     const pendingRecipients = allRecipients.filter((recipient: unknown) => {
       const rec = recipient as { _id?: { toString: () => string } };
-      return rec._id && !sentRecipientIds.has(rec._id.toString());
+      return rec._id && !processedRecipientIds.has(rec._id.toString());
     });
 
     // Get batch size
