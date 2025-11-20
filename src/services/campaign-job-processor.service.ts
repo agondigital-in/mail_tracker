@@ -2,6 +2,7 @@ import type { Job } from "agenda";
 import { Campaign, Email, Recipient } from "@/db/models";
 import agenda from "@/lib/agenda";
 import { sendEmail } from "./email.service";
+import { sendExecutionReport } from "./reports/execution-report.service";
 import { processVariables } from "./template.service";
 
 interface CampaignJobData {
@@ -317,6 +318,18 @@ export async function processCampaign(job: Job<CampaignJobData>) {
         },
       },
     });
+
+    // Send execution report email
+    await sendExecutionReport({
+      campaign: finalCampaign,
+      executionStartTime: new Date(executionStartTime),
+      executionEndTime: new Date(),
+      executionDuration,
+      totalSent,
+      totalFailed,
+      smtpStats,
+      remainingCount: finalCampaign?.remainingCount || 0,
+    });
   } catch (error) {
     // Calculate execution duration
     const executionDuration = Math.floor(
@@ -584,18 +597,49 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
     });
 
     // Update campaign progress in single query
-    await Campaign.findByIdAndUpdate(campaignId, {
-      $inc: {
-        sentCount: totalSent,
+    const updatedCampaign = await Campaign.findByIdAndUpdate(
+      campaignId,
+      {
+        $inc: {
+          sentCount: totalSent,
+        },
+        $set: {
+          remainingCount: pendingRecipients.length - totalSent,
+          "schedule.lastExecutedAt": new Date(),
+        },
       },
-      $set: {
-        remainingCount: pendingRecipients.length - totalSent,
-        "schedule.lastExecutedAt": new Date(),
-      },
+      { new: true },
+    );
+
+    // Calculate execution duration
+    const executionDuration = Math.floor((Date.now() - Date.now()) / 1000); // Approximate
+
+    // Build SMTP stats
+    const smtpStats = resetMailServers.map((server: any) => ({
+      serverId: server.serverId.toString(),
+      serverName: "Server", // We don't have name in recurring
+      sent: server.sent,
+      failed: 0,
+    }));
+
+    // Send execution report
+    await sendExecutionReport({
+      campaign: updatedCampaign,
+      executionStartTime: new Date(Date.now() - executionDuration * 1000),
+      executionEndTime: new Date(),
+      executionDuration,
+      totalSent,
+      totalFailed: 0,
+      smtpStats,
+      remainingCount: updatedCampaign?.remainingCount || 0,
     });
 
     // Schedule next execution
-    if (campaign.schedule?.frequency && campaign.remainingCount > 0) {
+    if (
+      campaign.schedule?.frequency &&
+      updatedCampaign &&
+      updatedCampaign.remainingCount > 0
+    ) {
       const nextDate = calculateNextExecutionDate(
         new Date(),
         campaign.schedule.frequency,
