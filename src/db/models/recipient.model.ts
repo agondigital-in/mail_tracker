@@ -34,6 +34,13 @@ const recipientSchema = new mongoose.Schema(
     unsubscribedAt: {
       type: Date,
     },
+    // Track which campaigns this recipient has been sent emails from
+    sentCampaigns: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Campaign",
+      },
+    ],
   },
   {
     timestamps: true,

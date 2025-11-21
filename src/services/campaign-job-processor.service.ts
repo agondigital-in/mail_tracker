@@ -12,23 +12,47 @@ interface CampaignJobData {
 /**
  * Get active recipients from campaign's recipient lists (optimized)
  * Sorted based on campaign's sortOrder preference
+ * Filters out recipients who have already been sent emails from this campaign
  */
-async function getActiveRecipients(campaign: {
-  recipientListIds: string[];
-  schedule?: {
-    sortOrder?: "newest" | "oldest";
-  };
-}) {
+async function getActiveRecipients(
+  campaign: {
+    _id: unknown;
+    recipientListIds: string[];
+    schedule?: {
+      sortOrder?: "newest" | "oldest";
+    };
+  },
+  excludeCampaignId?: string,
+  limit?: number,
+) {
   // Determine sort order (default: newest first)
   const sortOrder = campaign.schedule?.sortOrder === "oldest" ? 1 : -1;
 
-  // Single query with filter - more efficient than filtering in memory
-  const recipients = await Recipient.find({
+  // Build query - exclude recipients who already received email from this campaign
+  const query: {
+    recipientListId: { $in: string[] };
+    unsubscribed: boolean;
+    sentCampaigns?: { $nin: unknown[] };
+  } = {
     recipientListId: { $in: campaign.recipientListIds },
     unsubscribed: false,
-  })
-    .sort({ createdAt: sortOrder }) // Sort by creation date
-    .lean(); // Use lean() for better performance
+  };
+
+  // For recurring campaigns, exclude recipients who already got email from this campaign
+  if (excludeCampaignId) {
+    query.sentCampaigns = { $nin: [excludeCampaignId] };
+  }
+
+  // Build query with optional limit
+  let queryBuilder = Recipient.find(query).sort({ createdAt: sortOrder });
+
+  // Apply limit if provided (for batch processing)
+  if (limit && limit > 0) {
+    queryBuilder = queryBuilder.limit(limit);
+  }
+
+  // Use lean() for better performance
+  const recipients = await queryBuilder.lean();
 
   return recipients;
 }
@@ -127,6 +151,7 @@ export async function processCampaign(job: Job<CampaignJobData>) {
     }
 
     // Get active recipients (single optimized query)
+    // For bulk campaigns, we don't exclude by campaign ID (one-time send)
     const activeRecipients = await getActiveRecipients(campaign);
 
     if (activeRecipients.length === 0) {
@@ -336,6 +361,13 @@ export async function processCampaign(job: Job<CampaignJobData>) {
       (Date.now() - executionStartTime) / 1000,
     );
 
+    console.log("=".repeat(60));
+    console.log("❌ JOB FAILED");
+    console.log(`🚨 Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    console.log(`⏱️  Duration: ${executionDuration}s`);
+    console.log(`⏰ Failed at: ${new Date().toISOString()}`);
+    console.log("=".repeat(60));
+
     // Mark campaign as failed and log execution
     await Campaign.findByIdAndUpdate(campaignId, {
       $set: {
@@ -439,11 +471,36 @@ export async function sendBatch(
         smtpServerId: serverConfig.serverId,
       });
 
+      // Mark this campaign as sent in recipient's sentCampaigns array (SUCCESS)
+      if (recipient._id) {
+        await Recipient.findByIdAndUpdate(recipient._id, {
+          $addToSet: { sentCampaigns: campaignId },
+        });
+      }
+
       // Apply delay
       if (delay > 0) {
         await new Promise((resolve) => setTimeout(resolve, delay * 1000));
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
+      // Skip if duplicate key error (already processed)
+      if (
+        errorMessage.includes("E11000") ||
+        errorMessage.includes("duplicate key")
+      ) {
+        console.log(
+          `[SendBatch] Skipping duplicate: ${recipient.email} - already in database`,
+        );
+        continue;
+      }
+
+      console.log(
+        `[SendBatch] Failed to send to ${recipient.email}: ${errorMessage}`,
+      );
+
       // Track failed email in Email collection
       if (recipient._id) {
         await Email.create({
@@ -456,7 +513,7 @@ export async function sendBatch(
           subject,
           htmlContent,
           status: "failed",
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: errorMessage,
           smtpServerId: serverConfig.serverId,
           sentAt: new Date(),
           bounced: false,
@@ -464,16 +521,28 @@ export async function sendBatch(
           uniqueClicks: 0,
           totalOpens: 0,
           totalClicks: 0,
-        }).catch(() => {
-          // Ignore duplicate key errors
+        }).catch((createError) => {
+          // Ignore duplicate key errors on failed email creation too
+          const createErrorMsg =
+            createError instanceof Error
+              ? createError.message
+              : "Unknown error";
+          if (
+            !createErrorMsg.includes("E11000") &&
+            !createErrorMsg.includes("duplicate key")
+          ) {
+            console.error("Error creating failed email record:", createError);
+          }
+        });
+
+        // Mark this campaign as sent in recipient's sentCampaigns array (FAILED)
+        // This prevents retry in next execution
+        await Recipient.findByIdAndUpdate(recipient._id, {
+          $addToSet: { sentCampaigns: campaignId },
         });
       }
 
-      await handleSendError(
-        campaignId,
-        recipient.email,
-        error instanceof Error ? error.message : "Unknown error",
-      );
+      await handleSendError(campaignId, recipient.email, errorMessage);
     }
   }
 }
@@ -507,47 +576,66 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
       return;
     }
 
-    // Get active recipients (optimized single query)
-    const allRecipients = await getActiveRecipients(campaign);
-
-    // Update total recipients count (in case list was updated)
-    // Note: remainingCount will be calculated after filtering sent emails
-    await Campaign.findByIdAndUpdate(campaignId, {
-      totalRecipients: allRecipients.length,
-    });
-
-    // Get already sent/failed recipient IDs from Email collection (prevent duplicates and retries)
-    const processedEmails = await Email.find(
-      { campaignId: campaign._id, status: { $in: ["sent", "failed"] } },
-      { recipientId: 1 },
-    ).lean();
-
-    const processedRecipientIds = new Set(
-      processedEmails
-        .map((email) => email.recipientId?.toString())
-        .filter(Boolean),
+    // Calculate total limit from all SMTP servers for this execution
+    const totalLimit = campaign.mailServers.reduce(
+      (sum: number, server: { limit: number }) => sum + server.limit,
+      0,
     );
 
-    // Filter out recipients who already received email (sent or failed)
-    const pendingRecipients = allRecipients.filter((recipient: unknown) => {
-      const rec = recipient as { _id?: { toString: () => string } };
-      return rec._id && !processedRecipientIds.has(rec._id.toString());
+    console.log(
+      `[Recurring] Campaign ${campaignId}: Total SMTP limit for this execution: ${totalLimit}`,
+    );
+
+    // For recurring campaigns, use SMTP limit as the batch size
+    // This ensures full utilization of SMTP server capacity
+    const effectiveBatchSize = totalLimit;
+
+    console.log(
+      `[Recurring] Campaign ${campaignId}: Batch size for this execution: ${effectiveBatchSize}`,
+    );
+
+    // Get ONLY the recipients needed for this execution (optimized query with limit)
+    // For recurring campaigns, exclude recipients who already got email from this campaign
+    const batch = await getActiveRecipients(
+      campaign,
+      campaign._id.toString(),
+      effectiveBatchSize,
+    );
+
+    // Get total pending count for tracking (separate count query - faster than fetching all)
+    const totalPendingCount = await Recipient.countDocuments({
+      recipientListId: { $in: campaign.recipientListIds },
+      unsubscribed: false,
+      sentCampaigns: { $nin: [campaign._id] },
     });
 
-    // Get batch size
-    const batchSize = campaign.schedule?.batchSize || 100;
+    // Get total recipients count (in case list was updated after campaign creation)
+    const totalRecipientsInList = await Recipient.countDocuments({
+      recipientListId: { $in: campaign.recipientListIds },
+      unsubscribed: false,
+    });
 
-    // Take next batch from pending recipients
-    const batch = pendingRecipients.slice(0, batchSize);
+    // Update total recipients count
+    await Campaign.findByIdAndUpdate(campaignId, {
+      totalRecipients: totalRecipientsInList, // Total active recipients in list
+    });
 
     if (batch.length === 0) {
       // All recipients processed, mark as completed
+      console.log(
+        `[Recurring] Campaign ${campaignId} completed - all recipients processed`,
+      );
       await Campaign.findByIdAndUpdate(campaignId, {
         status: "completed",
         completedAt: new Date(),
+        remainingCount: 0,
       });
       return;
     }
+
+    console.log(
+      `[Recurring] Campaign ${campaignId}: Processing ${batch.length} recipients (${totalPendingCount} total pending)`,
+    );
 
     // Reset server sent counts for new execution (daily/weekly/monthly reset)
     const resetMailServers = campaign.mailServers.map(
@@ -604,7 +692,7 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
           sentCount: totalSent,
         },
         $set: {
-          remainingCount: pendingRecipients.length - totalSent,
+          remainingCount: totalPendingCount - totalSent,
           "schedule.lastExecutedAt": new Date(),
         },
       },
@@ -634,7 +722,14 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
       remainingCount: updatedCampaign?.remainingCount || 0,
     });
 
-    // Schedule next execution
+    console.log("=".repeat(60));
+    console.log("✅ JOB EXECUTION COMPLETED");
+    console.log(`📧 Sent in this execution: ${totalSent}`);
+    console.log(`📊 Remaining recipients: ${updatedCampaign?.remainingCount || 0}`);
+    console.log(`⏰ Completed at: ${new Date().toISOString()}`);
+    console.log("=".repeat(60));
+
+    // Schedule next execution only if there are remaining recipients
     if (
       campaign.schedule?.frequency &&
       updatedCampaign &&
@@ -645,11 +740,36 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
         campaign.schedule.frequency,
       );
 
+      console.log("\n" + "=".repeat(60));
+      console.log("📅 SCHEDULING NEXT EXECUTION");
+      console.log(`⏰ Next execution at: ${nextDate.toISOString()}`);
+      console.log(`📊 Remaining to send: ${updatedCampaign.remainingCount}`);
+      console.log("=".repeat(60) + "\n");
+
       await agenda.schedule(nextDate, "process-recurring-campaign", {
         campaignId: campaign._id.toString(),
       });
+    } else {
+      // Mark as completed if no more recipients
+      console.log("\n" + "=".repeat(60));
+      console.log("🎉 CAMPAIGN FULLY COMPLETED");
+      console.log(`📧 All recipients processed`);
+      console.log(`⏰ Completed at: ${new Date().toISOString()}`);
+      console.log("=".repeat(60) + "\n");
+      
+      await Campaign.findByIdAndUpdate(campaignId, {
+        status: "completed",
+        completedAt: new Date(),
+        remainingCount: 0,
+      });
     }
   } catch (error) {
+    console.log("=".repeat(60));
+    console.log("❌ JOB FAILED");
+    console.log(`🚨 Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    console.log(`⏰ Failed at: ${new Date().toISOString()}`);
+    console.log("=".repeat(60));
+
     await Campaign.findByIdAndUpdate(campaignId, {
       $set: {
         status: "failed",
