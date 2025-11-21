@@ -363,7 +363,9 @@ export async function processCampaign(job: Job<CampaignJobData>) {
 
     console.log("=".repeat(60));
     console.log("❌ JOB FAILED");
-    console.log(`🚨 Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    console.log(
+      `🚨 Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
     console.log(`⏱️  Duration: ${executionDuration}s`);
     console.log(`⏰ Failed at: ${new Date().toISOString()}`);
     console.log("=".repeat(60));
@@ -725,7 +727,9 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
     console.log("=".repeat(60));
     console.log("✅ JOB EXECUTION COMPLETED");
     console.log(`📧 Sent in this execution: ${totalSent}`);
-    console.log(`📊 Remaining recipients: ${updatedCampaign?.remainingCount || 0}`);
+    console.log(
+      `📊 Remaining recipients: ${updatedCampaign?.remainingCount || 0}`,
+    );
     console.log(`⏰ Completed at: ${new Date().toISOString()}`);
     console.log("=".repeat(60));
 
@@ -756,7 +760,7 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
       console.log(`📧 All recipients processed`);
       console.log(`⏰ Completed at: ${new Date().toISOString()}`);
       console.log("=".repeat(60) + "\n");
-      
+
       await Campaign.findByIdAndUpdate(campaignId, {
         status: "completed",
         completedAt: new Date(),
@@ -766,7 +770,9 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
   } catch (error) {
     console.log("=".repeat(60));
     console.log("❌ JOB FAILED");
-    console.log(`🚨 Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    console.log(
+      `🚨 Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
     console.log(`⏰ Failed at: ${new Date().toISOString()}`);
     console.log("=".repeat(60));
 

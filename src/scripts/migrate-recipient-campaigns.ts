@@ -14,7 +14,9 @@ async function connectDB() {
 
 async function migrateRecipientCampaigns() {
   try {
-    console.log("Starting migration: Populating sentCampaigns in recipients...");
+    console.log(
+      "Starting migration: Populating sentCampaigns in recipients...",
+    );
 
     await connectDB();
 
@@ -60,7 +62,9 @@ async function migrateRecipientCampaigns() {
         updated++;
 
         if (updated % 100 === 0) {
-          console.log(`Progress: ${updated}/${recipientCampaigns.size} recipients updated`);
+          console.log(
+            `Progress: ${updated}/${recipientCampaigns.size} recipients updated`,
+          );
         }
       } catch (error) {
         console.error(`Failed to update recipient ${recipientId}:`, error);

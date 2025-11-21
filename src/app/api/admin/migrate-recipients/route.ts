@@ -164,7 +164,8 @@ export async function GET(request: NextRequest) {
     const recipientsWithCampaigns = await Recipient.countDocuments({
       sentCampaigns: { $exists: true, $ne: [] },
     });
-    const recipientsWithoutCampaigns = totalRecipients - recipientsWithCampaigns;
+    const recipientsWithoutCampaigns =
+      totalRecipients - recipientsWithCampaigns;
 
     // Count total sent/failed emails
     const totalEmails = await Email.countDocuments({
