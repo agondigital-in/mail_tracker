@@ -345,6 +345,7 @@ export async function processCampaign(job: Job<CampaignJobData>) {
     });
 
     // Send execution report email
+    console.log("Execution Report init");
     await sendExecutionReport({
       campaign: finalCampaign,
       executionStartTime: new Date(executionStartTime),
@@ -355,6 +356,7 @@ export async function processCampaign(job: Job<CampaignJobData>) {
       smtpStats,
       remainingCount: finalCampaign?.remainingCount || 0,
     });
+    console.log("Execution Report has been sended");
   } catch (error) {
     // Calculate execution duration
     const executionDuration = Math.floor(
@@ -713,6 +715,7 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
     }));
 
     // Send execution report
+    console.log("Execution Report init");
     await sendExecutionReport({
       campaign: updatedCampaign,
       executionStartTime: new Date(Date.now() - executionDuration * 1000),
@@ -723,7 +726,7 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
       smtpStats,
       remainingCount: updatedCampaign?.remainingCount || 0,
     });
-
+    console.log("Execution Report has been sended");
     console.log("=".repeat(60));
     console.log("✅ JOB EXECUTION COMPLETED");
     console.log(`📧 Sent in this execution: ${totalSent}`);
