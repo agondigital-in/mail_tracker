@@ -47,7 +47,6 @@ const formSchema = z.object({
   scheduledDate: z.string(),
   scheduledTime: z.string(),
   frequency: z.enum(["daily", "weekly", "monthly"]),
-  batchSize: z.number().min(1),
   delay: z.number().min(0),
   sortOrder: z.enum(["newest", "oldest"]),
 });
@@ -81,7 +80,6 @@ export default function BulkComposePage() {
       scheduledDate: "",
       scheduledTime: "09:00",
       frequency: "daily" as const,
-      batchSize: 100,
       delay: 2,
       sortOrder: "newest" as const,
     },
@@ -114,7 +112,6 @@ export default function BulkComposePage() {
         type: string;
         startDate?: string;
         frequency?: string;
-        batchSize?: number;
         sortOrder?: string;
       } = {
         type: values.scheduleType,
@@ -132,7 +129,6 @@ export default function BulkComposePage() {
           `${values.scheduledDate || new Date().toISOString().split("T")[0]}T${values.scheduledTime}`,
         ).toISOString();
         scheduleData.frequency = values.frequency;
-        scheduleData.batchSize = values.batchSize;
       }
 
       const response = await fetch("/api/campaigns/bulk/create", {
@@ -537,28 +533,6 @@ export default function BulkComposePage() {
                   )}
                 />
               </div>
-              <FormField
-                control={form.control}
-                name="batchSize"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Batch Size (per execution)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={1}
-                        placeholder="100"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      How many emails to send per execution
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </>
           )}
 

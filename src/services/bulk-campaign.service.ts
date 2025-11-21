@@ -15,7 +15,6 @@ interface CreateBulkCampaignData {
     type: "immediate" | "scheduled" | "recurring";
     startDate?: Date;
     frequency?: "daily" | "weekly" | "monthly";
-    batchSize?: number;
     endDate?: Date;
   };
   delay: number;
@@ -68,9 +67,6 @@ export function validateCampaignData(data: CreateBulkCampaignData): {
   if (data.schedule.type === "recurring") {
     if (!data.schedule.frequency) {
       errors.push("Frequency is required for recurring campaigns");
-    }
-    if (!data.schedule.batchSize || data.schedule.batchSize <= 0) {
-      errors.push("Batch size must be greater than 0 for recurring campaigns");
     }
   }
 

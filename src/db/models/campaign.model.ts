@@ -74,9 +74,6 @@ const campaignSchema = new mongoose.Schema(
         type: String,
         enum: ["daily", "weekly", "monthly"],
       },
-      batchSize: {
-        type: Number,
-      },
       endDate: {
         type: Date,
       },
