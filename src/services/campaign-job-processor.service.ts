@@ -454,6 +454,7 @@ export async function sendBatch(
   serverConfig: { serverId: string; limit: number },
   campaignId: string,
   userId: string,
+  from: string,
   subject: string,
   htmlContent: string,
   delay: number,
@@ -513,7 +514,7 @@ export async function sendBatch(
           recipientId: recipient._id,
           trackingId: `failed-${Date.now()}-${Math.random()}`,
           to: recipient.email,
-          from: "", // Will be filled by campaign
+          from: from,
           subject,
           htmlContent,
           status: "failed",
@@ -578,6 +579,36 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
         completedAt: new Date(),
       });
       return;
+    }
+
+    // Check for duplicate execution (debounce)
+    // This prevents multiple jobs from running for the same campaign within the frequency period
+    if (campaign.schedule?.lastExecutedAt && campaign.schedule?.frequency) {
+      const lastRun = new Date(campaign.schedule.lastExecutedAt);
+      const now = new Date();
+      const diffMs = now.getTime() - lastRun.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+
+      let minIntervalHours = 0;
+      switch (campaign.schedule.frequency) {
+        case "daily":
+          minIntervalHours = 20; // Allow some buffer (e.g. if it runs 23 hours later, it's fine)
+          break;
+        case "weekly":
+          minIntervalHours = 24 * 6;
+          break;
+        case "monthly":
+          minIntervalHours = 24 * 25;
+          break;
+      }
+
+      if (minIntervalHours > 0 && diffHours < minIntervalHours) {
+        console.log(
+          `[Recurring] Skipping duplicate execution for campaign ${campaignId}. Last run: ${lastRun.toISOString()}, Now: ${now.toISOString()}`,
+        );
+        // Do NOT schedule next execution here, effectively killing this duplicate chain
+        return;
+      }
     }
 
     // Calculate total limit from all SMTP servers for this execution
@@ -670,6 +701,7 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
         },
         campaign._id.toString(),
         campaign.userId,
+        campaign.from || "",
         campaign.subject,
         campaign.htmlContent,
         campaign.delay,
