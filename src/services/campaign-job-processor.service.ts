@@ -785,9 +785,9 @@ async function processRecurringCampaign(job: Job<CampaignJobData>) {
       console.log(`📊 Remaining to send: ${updatedCampaign.remainingCount}`);
       console.log("=".repeat(60) + "\n");
 
-      await agenda.schedule(nextDate, "process-recurring-campaign", {
-        campaignId: campaign._id.toString(),
-      });
+      // Reschedule the same job instead of creating new one
+      job.attrs.nextRunAt = nextDate;
+      await job.save();
     } else {
       // Mark as completed if no more recipients
       console.log("\n" + "=".repeat(60));
