@@ -9,5 +9,9 @@ export const auth = betterAuth<BetterAuthOptions>({
   emailAndPassword: {
     enabled: true,
   },
+  advanced: {
+    cookiePrefix: "mail-tracker",
+    useSecureCookies: process.env.NODE_ENV === "production",
+  },
   plugins: [nextCookies()],
 });
