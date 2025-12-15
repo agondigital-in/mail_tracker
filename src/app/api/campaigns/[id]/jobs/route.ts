@@ -5,7 +5,7 @@ import agenda from "@/lib/agenda";
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: campaignId } = await params;
@@ -38,7 +38,7 @@ export async function GET(
     console.error("Error fetching jobs:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch jobs" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -46,7 +46,7 @@ export async function GET(
 // DELETE - Remove duplicate jobs, keep only the one with earliest nextRunAt
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: campaignId } = await params;
@@ -90,7 +90,7 @@ export async function DELETE(
     console.error("Error removing duplicate jobs:", error);
     return NextResponse.json(
       { success: false, error: "Failed to remove duplicate jobs" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

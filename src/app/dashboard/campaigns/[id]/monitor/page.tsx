@@ -271,7 +271,12 @@ export default function CampaignMonitorPage() {
   };
 
   const handleDeleteDuplicateJobs = async () => {
-    if (!confirm("Remove duplicate jobs? Only the earliest scheduled job will be kept.")) return;
+    if (
+      !confirm(
+        "Remove duplicate jobs? Only the earliest scheduled job will be kept.",
+      )
+    )
+      return;
 
     try {
       const response = await fetch(`/api/campaigns/${campaignId}/jobs`, {
@@ -547,7 +552,9 @@ export default function CampaignMonitorPage() {
                     className="border rounded-lg p-3 bg-red-50/50 dark:bg-red-950/30 dark:border-red-800"
                   >
                     <p className="font-medium text-sm">{failed.email}</p>
-                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">{failed.error}</p>
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                      {failed.error}
+                    </p>
                   </div>
                 ))}
               </div>
