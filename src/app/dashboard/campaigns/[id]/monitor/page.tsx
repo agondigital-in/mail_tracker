@@ -4,9 +4,11 @@ import {
   ArrowLeft,
   Calendar,
   Clock,
+  Loader2,
   Pause,
   Play,
   Repeat,
+  Trash2,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -36,6 +38,19 @@ interface CampaignProgress {
       lastExecutedAt?: string;
     };
   };
+}
+
+interface CampaignJob {
+  id: string;
+  name: string;
+  status: "running" | "scheduled" | "completed" | "failed" | "queued";
+  nextRunAt?: string;
+  lastRunAt?: string;
+  lastFinishedAt?: string;
+  lockedAt?: string;
+  failedAt?: string;
+  failReason?: string;
+  failCount: number;
 }
 
 function getRelativeTime(date: Date): string {
@@ -138,6 +153,7 @@ export default function CampaignMonitorPage() {
   const [progress, setProgress] = useState<CampaignProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState<string>("");
+  const [jobs, setJobs] = useState<CampaignJob[]>([]);
 
   const fetchProgress = async () => {
     try {
@@ -154,10 +170,28 @@ export default function CampaignMonitorPage() {
     }
   };
 
+  const fetchJobs = async () => {
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/jobs`);
+      const data = await response.json();
+
+      if (data.success) {
+        setJobs(data.jobs);
+      }
+    } catch (_error) {
+      console.error("Failed to fetch jobs");
+    }
+  };
+
   useEffect(() => {
     fetchProgress();
-    const interval = setInterval(fetchProgress, 5000); // Poll every 5 seconds
-    return () => clearInterval(interval);
+    fetchJobs();
+    const progressInterval = setInterval(fetchProgress, 5000); // Poll every 5 seconds
+    const jobsInterval = setInterval(fetchJobs, 5000);
+    return () => {
+      clearInterval(progressInterval);
+      clearInterval(jobsInterval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId]);
 
@@ -236,6 +270,26 @@ export default function CampaignMonitorPage() {
     }
   };
 
+  const handleDeleteDuplicateJobs = async () => {
+    if (!confirm("Remove duplicate jobs? Only the earliest scheduled job will be kept.")) return;
+
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/jobs`, {
+        method: "DELETE",
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(data.message);
+        fetchJobs();
+      } else {
+        toast.error(data.error);
+      }
+    } catch (_error) {
+      toast.error("Failed to remove duplicate jobs");
+    }
+  };
+
   if (loading) {
     return <div className="container mx-auto py-8 px-4">Loading...</div>;
   }
@@ -273,18 +327,18 @@ export default function CampaignMonitorPage() {
           <span
             className={`px-3 py-1 rounded-full text-sm font-medium ${
               progress.status === "completed"
-                ? "bg-green-100 text-green-800"
+                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                 : progress.status === "processing"
-                  ? "bg-blue-100 text-blue-800"
+                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
                   : progress.status === "paused"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : "bg-gray-100 text-gray-800"
+                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
             }`}
           >
             {progress.status}
           </span>
           {progress.campaign?.schedule?.type === "recurring" && (
-            <div className="flex items-center gap-2 text-sm text-purple-600">
+            <div className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400">
               <Repeat className="w-4 h-4" />
               <span className="capitalize">
                 {progress.campaign.schedule.frequency}
@@ -301,32 +355,32 @@ export default function CampaignMonitorPage() {
             {/* Next Execution */}
             {nextExecution && (
               <Card
-                className={`border-l-4 ${nextExecution.isPending ? "border-l-orange-500 bg-orange-50/50" : "border-l-blue-500 bg-blue-50/50"}`}
+                className={`border-l-4 ${nextExecution.isPending ? "border-l-orange-500 bg-orange-50/50 dark:bg-orange-950/30" : "border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/30"}`}
               >
                 <CardHeader>
                   <CardTitle
-                    className={`flex items-center gap-2 text-lg ${nextExecution.isPending ? "text-orange-700" : "text-blue-700"}`}
+                    className={`flex items-center gap-2 text-lg ${nextExecution.isPending ? "text-orange-700 dark:text-orange-400" : "text-blue-700 dark:text-blue-400"}`}
                   >
                     <Clock
-                      className={`w-5 h-5 ${nextExecution.isPending ? "text-orange-600" : "text-blue-600"}`}
+                      className={`w-5 h-5 ${nextExecution.isPending ? "text-orange-600 dark:text-orange-400" : "text-blue-600 dark:text-blue-400"}`}
                     />
                     Next Execution
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p
-                    className={`text-3xl font-bold ${nextExecution.isPending ? "text-orange-900" : "text-blue-900"}`}
+                    className={`text-3xl font-bold ${nextExecution.isPending ? "text-orange-900 dark:text-orange-300" : "text-blue-900 dark:text-blue-300"}`}
                   >
                     {countdown || nextExecution.relative}
                   </p>
                   <div
-                    className={`flex items-center gap-2 text-sm ${nextExecution.isPending ? "text-orange-700" : "text-blue-700"}`}
+                    className={`flex items-center gap-2 text-sm ${nextExecution.isPending ? "text-orange-700 dark:text-orange-400" : "text-blue-700 dark:text-blue-400"}`}
                   >
                     <Calendar className="w-4 h-4" />
                     <p>{nextExecution.date}</p>
                   </div>
                   {nextExecution.isPending && (
-                    <div className="mt-2 p-2 bg-orange-100 rounded text-xs text-orange-800">
+                    <div className="mt-2 p-2 bg-orange-100 dark:bg-orange-900/30 rounded text-xs text-orange-800 dark:text-orange-300">
                       ⚠️ Campaign will start processing shortly
                     </div>
                   )}
@@ -336,10 +390,10 @@ export default function CampaignMonitorPage() {
 
             {/* Start Time */}
             {progress.campaign.schedule.startDate && (
-              <Card className="border-l-4 border-l-purple-500">
+              <Card className="border-l-4 border-l-purple-500 dark:border-l-purple-400">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Calendar className="w-5 h-5 text-purple-600" />
+                    <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     {progress.campaign.schedule.type === "recurring"
                       ? "First Execution"
                       : "Scheduled Time"}
@@ -357,10 +411,10 @@ export default function CampaignMonitorPage() {
 
             {/* Last Execution (for recurring) */}
             {progress.campaign.schedule.lastExecutedAt && (
-              <Card className="border-l-4 border-l-green-500">
+              <Card className="border-l-4 border-l-green-500 dark:border-l-green-400">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Clock className="w-5 h-5 text-green-600" />
+                    <Clock className="w-5 h-5 text-green-600 dark:text-green-400" />
                     Last Execution
                   </CardTitle>
                 </CardHeader>
@@ -423,7 +477,7 @@ export default function CampaignMonitorPage() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="border-l-4 border-l-gray-500">
+              <Card className="border-l-4 border-l-gray-500 dark:border-l-gray-400">
                 <CardContent className="pt-6">
                   <p className="text-sm text-muted-foreground mb-1">Total</p>
                   <p className="text-3xl font-bold">
@@ -431,28 +485,28 @@ export default function CampaignMonitorPage() {
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border-l-4 border-l-green-500">
+              <Card className="border-l-4 border-l-green-500 dark:border-l-green-400">
                 <CardContent className="pt-6">
                   <p className="text-sm text-muted-foreground mb-1">Sent</p>
-                  <p className="text-3xl font-bold text-green-600">
+                  <p className="text-3xl font-bold text-green-600 dark:text-green-400">
                     {progress.sentCount}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border-l-4 border-l-blue-500">
+              <Card className="border-l-4 border-l-blue-500 dark:border-l-blue-400">
                 <CardContent className="pt-6">
                   <p className="text-sm text-muted-foreground mb-1">
                     Remaining
                   </p>
-                  <p className="text-3xl font-bold text-blue-600">
+                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                     {progress.remainingCount}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border-l-4 border-l-red-500">
+              <Card className="border-l-4 border-l-red-500 dark:border-l-red-400">
                 <CardContent className="pt-6">
                   <p className="text-sm text-muted-foreground mb-1">Failed</p>
-                  <p className="text-3xl font-bold text-red-600">
+                  <p className="text-3xl font-bold text-red-600 dark:text-red-400">
                     {progress.failedCount}
                   </p>
                 </CardContent>
@@ -479,9 +533,9 @@ export default function CampaignMonitorPage() {
         </Card>
 
         {progress.failedRecipients && progress.failedRecipients.length > 0 && (
-          <Card className="border-l-4 border-l-red-500">
+          <Card className="border-l-4 border-l-red-500 dark:border-l-red-400">
             <CardHeader>
-              <CardTitle className="text-red-600">
+              <CardTitle className="text-red-600 dark:text-red-400">
                 Failed Recipients ({progress.failedRecipients.length})
               </CardTitle>
             </CardHeader>
@@ -490,10 +544,108 @@ export default function CampaignMonitorPage() {
                 {progress.failedRecipients.map((failed, index) => (
                   <div
                     key={index}
-                    className="border rounded-lg p-3 bg-red-50/50"
+                    className="border rounded-lg p-3 bg-red-50/50 dark:bg-red-950/30 dark:border-red-800"
                   >
                     <p className="font-medium text-sm">{failed.email}</p>
-                    <p className="text-xs text-red-600 mt-1">{failed.error}</p>
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">{failed.error}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Running Jobs */}
+        {jobs.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5" />
+                  Campaign Jobs ({jobs.length})
+                </CardTitle>
+                {jobs.length > 1 && (
+                  <Button
+                    onClick={handleDeleteDuplicateJobs}
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Remove Duplicates
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {jobs.map((job) => (
+                  <div
+                    key={job.id}
+                    className={`border rounded-lg p-4 ${
+                      job.status === "running"
+                        ? "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800"
+                        : job.status === "failed"
+                          ? "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800"
+                          : job.status === "scheduled"
+                            ? "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800"
+                            : "bg-gray-50 border-gray-200 dark:bg-gray-800/50 dark:border-gray-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {job.status === "running" && (
+                          <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
+                        )}
+                        <span className="font-medium">{job.name}</span>
+                      </div>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          job.status === "running"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                            : job.status === "failed"
+                              ? "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+                              : job.status === "scheduled"
+                                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300"
+                                : job.status === "completed"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        {job.status}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                      {job.nextRunAt && (
+                        <div>
+                          <span className="font-medium">Next Run:</span>{" "}
+                          {new Date(job.nextRunAt).toLocaleString()}
+                        </div>
+                      )}
+                      {job.lastRunAt && (
+                        <div>
+                          <span className="font-medium">Last Run:</span>{" "}
+                          {new Date(job.lastRunAt).toLocaleString()}
+                        </div>
+                      )}
+                      {job.lockedAt && (
+                        <div>
+                          <span className="font-medium">Started:</span>{" "}
+                          {new Date(job.lockedAt).toLocaleString()}
+                        </div>
+                      )}
+                      {job.failCount > 0 && (
+                        <div className="text-red-600 dark:text-red-400">
+                          <span className="font-medium">Fail Count:</span>{" "}
+                          {job.failCount}
+                        </div>
+                      )}
+                    </div>
+                    {job.failReason && (
+                      <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/30 rounded text-xs text-red-800 dark:text-red-300">
+                        {job.failReason}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

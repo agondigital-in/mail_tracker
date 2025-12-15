@@ -241,39 +241,47 @@ export async function resumeCampaign(campaignId: string, userId: string) {
   campaign.status = newStatus;
   await campaign.save();
 
-  // Reschedule Agenda job
-  const jobName =
-    campaign.schedule?.type === "recurring"
-      ? "process-recurring-campaign"
-      : "process-bulk-campaign";
+  // Find existing job for this campaign
+  const existingJobs = await agenda.jobs({
+    "data.campaignId": campaign._id.toString(),
+  });
 
-  let job;
-
+  let nextRunAt: Date;
   if (newStatus === "scheduled" && campaign.schedule?.startDate) {
     const startDate = new Date(campaign.schedule.startDate);
-    const now = new Date();
-
-    if (startDate > now) {
-      // Schedule for future
-      job = await agenda.schedule(startDate, jobName, {
-        campaignId: campaign._id.toString(),
-      });
-    } else {
-      // Start immediately if overdue
-      job = await agenda.now(jobName, {
-        campaignId: campaign._id.toString(),
-      });
-    }
+    nextRunAt = startDate > new Date() ? startDate : new Date();
   } else {
-    // Start immediately for processing status
-    job = await agenda.now(jobName, {
-      campaignId: campaign._id.toString(),
-    });
+    nextRunAt = new Date(); // Run immediately
   }
 
-  if (job) {
+  if (existingJobs.length > 0) {
+    // Update existing job's nextRunAt instead of creating new one
+    const job = existingJobs[0];
+    job.attrs.nextRunAt = nextRunAt;
+    await job.save();
+
+    // Remove any duplicate jobs (keep only first one)
+    for (let i = 1; i < existingJobs.length; i++) {
+      await existingJobs[i].remove();
+    }
+
     campaign.agendaJobId = job.attrs._id?.toString();
     await campaign.save();
+  } else {
+    // No existing job, create new one
+    const jobName =
+      campaign.schedule?.type === "recurring"
+        ? "process-recurring-campaign"
+        : "process-bulk-campaign";
+
+    const job = await agenda.schedule(nextRunAt, jobName, {
+      campaignId: campaign._id.toString(),
+    });
+
+    if (job) {
+      campaign.agendaJobId = job.attrs._id?.toString();
+      await campaign.save();
+    }
   }
 
   return { success: true };
